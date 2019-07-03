@@ -15,6 +15,8 @@ and omits many desirable features.
 #### Libraries
 # Standard library
 import random
+import pickle
+import os
 
 # Third-party libraries
 import numpy as np
@@ -38,6 +40,22 @@ class Network(object):
         self.weights = [np.random.randn(y, x)
                         for x, y in zip(sizes[:-1], sizes[1:])]
 
+    # pickle data in this class as a backup
+    # https://stackoverflow.com/a/2842727
+    def save(self, filename):
+        if os.path.exists(filename):
+          os.remove(filename)
+        f = open(filename, 'wb')
+        pickle.dump(self.__dict__, f, 2)
+        f.close()
+        print("*** network saved to '" + filename + "' ***")
+
+    # load data into this class from pickle file
+    def load(self, filename):
+        f = open(filename, 'rb')
+        self.__dict__.update(pickle.load(f))
+        f.close()
+
     def feedforward(self, a):
         """Return the output of the network if ``a`` is input."""
         for b, w in zip(self.biases, self.weights):
@@ -54,6 +72,9 @@ class Network(object):
         network will be evaluated against the test data after each
         epoch, and partial progress printed out.  This is useful for
         tracking progress, but slows things down substantially."""
+        backup_dir = "backups"
+        if not os.path.exists(backup_dir):
+            os.makedirs(backup_dir)
 
         training_data = list(training_data)
         n = len(training_data)
@@ -70,9 +91,12 @@ class Network(object):
             for mini_batch in mini_batches:
                 self.update_mini_batch(mini_batch, eta)
             if test_data:
-                print("Epoch {} : {} / {}".format(j,self.evaluate(test_data),n_test));
+                print("Epoch {} : {} / {}".format(j, self.evaluate(test_data), n_test));
             else:
                 print("Epoch {} complete".format(j))
+            self.save(backup_dir + "/latest.pkl")
+            if j % 5 == 0:
+                self.save(backup_dir + "/epoch" + str(j) + ".pkl")
 
     def update_mini_batch(self, mini_batch, eta):
         """Update the network's weights and biases by applying
