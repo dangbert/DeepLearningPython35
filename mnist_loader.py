@@ -58,14 +58,21 @@ def load_data_wrapper():
     the training data and the validation / test data.  These formats
     turn out to be the most convenient for use in our neural network
     code."""
+
     tr_d, va_d, te_d = load_data()
+
+    # TODO: perhaps don't convert to list because this uses a lot of memory?
+    # note you can't reuse generators (which is why I converted it to a list)
+    # https://stackoverflow.com/a/36298531
     training_inputs = [np.reshape(x, (784, 1)) for x in tr_d[0]]
     training_results = [vectorized_result(y) for y in tr_d[1]]
-    training_data = zip(training_inputs, training_results)
+    training_data = list(zip(training_inputs, training_results))
+
     validation_inputs = [np.reshape(x, (784, 1)) for x in va_d[0]]
-    validation_data = zip(validation_inputs, va_d[1])
+    validation_data = list(zip(validation_inputs, va_d[1]))
+
     test_inputs = [np.reshape(x, (784, 1)) for x in te_d[0]]
-    test_data = zip(test_inputs, te_d[1])
+    test_data = list(zip(test_inputs, te_d[1]))
     return (training_data, validation_data, test_data)
 
 def vectorized_result(j):

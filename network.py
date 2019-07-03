@@ -55,6 +55,7 @@ class Network(object):
         f = open(filename, 'rb')
         self.__dict__.update(pickle.load(f))
         f.close()
+        #print("*** network loaded from '" + filename + "' ***")
 
     def feedforward(self, a):
         """Return the output of the network if ``a`` is input."""
@@ -63,7 +64,7 @@ class Network(object):
         return a
 
     def SGD(self, training_data, epochs, mini_batch_size, eta,
-            test_data=None):
+            test_data=None, start_epoch=1):
         """Train the neural network using mini-batch stochastic
         gradient descent.  The ``training_data`` is a list of tuples
         ``(x, y)`` representing the training inputs and the desired
@@ -75,6 +76,8 @@ class Network(object):
         backup_dir = "backups"
         if not os.path.exists(backup_dir):
             os.makedirs(backup_dir)
+        if start_epoch == 1:
+            self.save(backup_dir + "/initial.pkl")
 
         training_data = list(training_data)
         n = len(training_data)
@@ -82,8 +85,9 @@ class Network(object):
         if test_data:
             test_data = list(test_data)
             n_test = len(test_data)
+            print("INITIAL: {} / {}".format(self.evaluate(test_data), n_test));
 
-        for j in range(epochs):
+        for n in range(start_epoch, epochs+1):
             random.shuffle(training_data)
             mini_batches = [
                 training_data[k:k+mini_batch_size]
@@ -91,12 +95,17 @@ class Network(object):
             for mini_batch in mini_batches:
                 self.update_mini_batch(mini_batch, eta)
             if test_data:
-                print("Epoch {} : {} / {}".format(j, self.evaluate(test_data), n_test));
+                print("Epoch {} : {} / {}".format(n, self.evaluate(test_data), n_test));
             else:
-                print("Epoch {} complete".format(j))
-            self.save(backup_dir + "/latest.pkl")
-            if j % 5 == 0:
-                self.save(backup_dir + "/epoch" + str(j) + ".pkl")
+                print("Epoch {} complete".format(n))
+
+            if n % 10 == 0:
+                self.save(backup_dir + "/latest.pkl")
+            if n % 50 == 0:
+                self.save(backup_dir + "/epoch" + str(n) + ".pkl")
+
+        self.save(backup_dir + "/epoch" + str(epoch) + ".pkl")
+        print("\ntraining complete (reached epoch" + str(epochs) + ")")
 
     def update_mini_batch(self, mini_batch, eta):
         """Update the network's weights and biases by applying
