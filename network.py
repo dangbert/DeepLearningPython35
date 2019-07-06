@@ -36,9 +36,14 @@ class Network(object):
         ever used in computing the outputs from later layers."""
         self.num_layers = len(sizes)
         self.sizes = sizes
+        # creates a column vector for each layer (except the first)
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
-        self.weights = [np.random.randn(y, x)
-                        for x, y in zip(sizes[:-1], sizes[1:])]
+
+        # creates an np array for layers 0...num_layers-1
+        #   for a given layer col 0 = vector of weights for connections
+        #   from node 0 (in cur layer) to next layer's nodes
+        self.weights = [np.random.rand(sizes[i+1], sizes[i])
+                        for i in range(self.num_layers-1)]
 
     # pickle data in this class as a backup
     # https://stackoverflow.com/a/2842727
@@ -104,7 +109,7 @@ class Network(object):
             if n % 50 == 0:
                 self.save(backup_dir + "/epoch" + str(n) + ".pkl")
 
-        self.save(backup_dir + "/epoch" + str(epoch) + ".pkl")
+        self.save(backup_dir + "/epoch" + str(epochs) + ".pkl")
         print("\ntraining complete (reached epoch" + str(epochs) + ")")
 
     def update_mini_batch(self, mini_batch, eta):
