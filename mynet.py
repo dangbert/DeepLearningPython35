@@ -77,10 +77,11 @@ class Network(object):
     # do backpropogation
     # (currently just calculates errors at each node)
     def backprop(self, cur, expected):
+        # TODO: also get zs from this function?
         activations = self.getActivations(cur)
-        print("\nactivations:")
         print(activations)
 
+        # TODO: we can store the errors in nabla_b directly  (or just return errors in place of nabla_b)
         nabla_b = [np.zeros(b.shape, dtype=float) for b in self.biases]
         nabla_w = [np.zeros(w.shape, dtype=float) for w in self.weights]
 
@@ -99,8 +100,7 @@ class Network(object):
                 # calculate errors[l][j]
                 al_j = activations[l][j]
                 # if we're on the last layer
-                if l == len(self.sizes)-1:
-                    #errors[l][j] = 2*(al_j-expected[j]) * al_j*(1-al_j) # BP1
+                if l == len(self.sizes)-1:  # this is the equivalent of me calculating delta
                     # TODO: use sigmoid_prime and cost_derivative directly here
                     errors[l][j] = (al_j-expected[j]) * al_j*(1-al_j) # BP1
                 else:
@@ -108,14 +108,13 @@ class Network(object):
                     total = 0
                     for k in range(0, self.sizes[l+1]):
                         total += self.weights[index+1][k][j] * errors[l+1][k][0]
-                    errors[l][j] = al_j*(1-al_j) + total
+                    errors[l][j] = al_j*(1-al_j) * total
 
-                # TODO: as test update the bias and weights corresponding to the error just calculated
                 # (not sure if doing this right)
                 #self.biases[index][j] += -0.25 * errors[l][j]
                 nabla_b[index][j] = errors[l][j]
                 for k in range(0, self.sizes[l-1]):
-                    nabla_w[index][j] = errors[l][j]*activations[l-1][k]
+                    nabla_w[index][j][k] = errors[l][j]*activations[l-1][k]
                     #self.weights[index][j] += -0.25 * errors[l][j]*activations[l-1][k]
         return (nabla_b, nabla_w)
 
