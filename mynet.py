@@ -56,18 +56,7 @@ class Network(object):
         f.close()
         #print("*** network loaded from '" + filename + "' ***")
 
-    # returns the output layers activations for given input
-    def evaluate(self, x):
-        return self.getActivations(x)[-1]
-
-    # returns list of the activation at each layer for given input
-    def getActivations(self, a):
-        activations = [a]
-        for b,w in zip(self.biases, self.weights):
-            a = self.sigmoid(np.dot(w,a)+b)
-            activations.append(a)
-        return activations
-
+    # TODO: create SGD function
     #def SGD(self, training_data, epochs, mini_batch_size, eta,
     #        test_data=None, start_epoch=1):
 
@@ -80,6 +69,8 @@ class Network(object):
         """
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
+        # average the delta_b, delta_w calculated for each training sample
+        # and adjust the weights, biases using the learning rate
         for x, y in miniBatch:
             delta_b, delta_w = self.backprop(x, y)
             nabla_b = [nb+db for nb, db in zip(nabla_b, delta_b)]
@@ -90,18 +81,18 @@ class Network(object):
                         for w, nw in zip(self.weights, nabla_w)]
 
     # do backpropogation
+    # returns nabla_b, nabla_w
+    # (partial dertivatives of biases and weights wrt. cost function)
     def backprop(self, cur, expected):
-        # TODO: also get zs from this function?
-        activations = self.getActivations(cur)
+        # TODO: also use zs from this function?
+        zs, activations = self.feedforward(cur)
 
-        # TODO: we can store the errors in nabla_b directly  (or just return errors in place of nabla_b)
+        # note: nabla_b is the same as the "error" calculated at each node
         nabla_b = [np.zeros(b.shape, dtype=float) for b in self.biases]
         nabla_w = [np.zeros(w.shape, dtype=float) for w in self.weights]
 
         # array to store the calculated error at each node as we backpropogate
-        # errors[l][j] = dC/dzl_0
         errors = [np.zeros((n, 1), dtype=float) for n in self.sizes]
-
         # traverse layers backwards
         # TODO: consider adding a dummy layer of to the beginning of the weights and biases vectors
         #       so the indicies make sense and match up with the errors array, etc
@@ -122,11 +113,24 @@ class Network(object):
                         total += self.weights[index+1][k][j] * errors[l+1][k][0]
                     errors[l][j] = al_j*(1-al_j) * total
 
-                # (not sure if doing this right)
                 nabla_b[index][j] = errors[l][j]
                 for k in range(0, self.sizes[l-1]):
                     nabla_w[index][j][k] = errors[l][j]*activations[l-1][k]
         return (nabla_b, nabla_w)
+
+    # returns the output layers activations for given input
+    def getOutput(self, x):
+        _, activations = self.feedforward(x)
+        return activations[-1]
+
+    # returns list of z values and list of activations at each layer for given input
+    def feedforward(self, a):
+        activations = [a]
+        zs = [np.zeros(a.shape, dtype=float)]   # zs[0] filled with dummy values
+        for b, w in zip(self.biases, self.weights):
+            zs.append(np.dot(w, activations[-1]) + b)
+            activations.append(self.sigmoid(zs[-1]))
+        return zs, activations
 
     # returns the vector of partial derivatives for
     # the cost with respect to output activations
@@ -143,4 +147,4 @@ class Network(object):
     # derivative of sigmoid function
     @staticmethod
     def sigmoid_prime(z):
-        return sigmoid(z) * (1 - sigmoid(z))
+        return sigmoid(z) * (1.0 - sigmoid(z))
