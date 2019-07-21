@@ -58,7 +58,7 @@ class Network(object):
 
     # returns the output layers activations for given input
     def evaluate(self, x):
-        return self.getActivations(x)[:-1]
+        return self.getActivations(x)[-1]
 
     # returns list of the activation at each layer for given input
     def getActivations(self, a):
@@ -71,15 +71,28 @@ class Network(object):
     #def SGD(self, training_data, epochs, mini_batch_size, eta,
     #        test_data=None, start_epoch=1):
 
-    #def update_mini_batch(self, mini_batch, eta):
-
+    def updateMiniBatch(self, miniBatch, rate):
+        """Update the network's weights and biases by applying
+        gradient descent using backpropagation to a single mini batch.
+        The ``mini_batch`` is a list of tuples ``(x, y)``, and ``rate``
+        is the learning rate.
+        note: to train on a single sample, set mini_batch=[(x,y)]
+        """
+        nabla_b = [np.zeros(b.shape) for b in self.biases]
+        nabla_w = [np.zeros(w.shape) for w in self.weights]
+        for x, y in miniBatch:
+            delta_b, delta_w = self.backprop(x, y)
+            nabla_b = [nb+db for nb, db in zip(nabla_b, delta_b)]
+            nabla_w = [nw+dw for nw, dw in zip(nabla_w, delta_w)]
+        self.biases = [b-(rate/len(miniBatch))*nb
+                       for b, nb in zip(self.biases, nabla_b)]
+        self.weights = [w-(rate/len(miniBatch))*nw
+                        for w, nw in zip(self.weights, nabla_w)]
 
     # do backpropogation
-    # (currently just calculates errors at each node)
     def backprop(self, cur, expected):
         # TODO: also get zs from this function?
         activations = self.getActivations(cur)
-        print(activations)
 
         # TODO: we can store the errors in nabla_b directly  (or just return errors in place of nabla_b)
         nabla_b = [np.zeros(b.shape, dtype=float) for b in self.biases]
@@ -94,7 +107,6 @@ class Network(object):
         #       so the indicies make sense and match up with the errors array, etc
         for l in range(len(self.sizes)-1, 0, -1):
             index = l-1 # notes: subtract 1 from layer number to index into weights and biases arrays
-            #print("at layer " + str(l))
             # traverse nodes in layer l
             for j in range(self.sizes[l]):
                 # calculate errors[l][j]
@@ -111,11 +123,9 @@ class Network(object):
                     errors[l][j] = al_j*(1-al_j) * total
 
                 # (not sure if doing this right)
-                #self.biases[index][j] += -0.25 * errors[l][j]
                 nabla_b[index][j] = errors[l][j]
                 for k in range(0, self.sizes[l-1]):
                     nabla_w[index][j][k] = errors[l][j]*activations[l-1][k]
-                    #self.weights[index][j] += -0.25 * errors[l][j]*activations[l-1][k]
         return (nabla_b, nabla_w)
 
     # returns the vector of partial derivatives for
