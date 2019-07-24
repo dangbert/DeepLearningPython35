@@ -42,7 +42,7 @@ class Network(object):
         # creates an np array for layers 0...num_layers-1
         #   for a given layer col 0 = vector of weights for connections
         #   from node 0 (in cur layer) to next layer's nodes
-        self.weights = [np.random.rand(sizes[i+1], sizes[i])
+        self.weights = [np.random.randn(sizes[i+1], sizes[i])
                         for i in range(self.num_layers-1)]
 
     # pickle data in this class as a backup
@@ -78,7 +78,7 @@ class Network(object):
         network will be evaluated against the test data after each
         epoch, and partial progress printed out.  This is useful for
         tracking progress, but slows things down substantially."""
-        backup_dir = "backups"
+        backup_dir = "backups-network"
         if not os.path.exists(backup_dir):
             os.makedirs(backup_dir)
         if start_epoch == 1:

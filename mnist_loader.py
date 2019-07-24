@@ -14,6 +14,7 @@ import pickle
 import gzip
 
 # Third-party libraries
+from PIL import Image
 import numpy as np
 
 def load_data():
@@ -83,3 +84,13 @@ def vectorized_result(j):
     e = np.zeros((10, 1))
     e[j] = 1.0
     return e
+
+# convert to image and save to given filename
+def vectorToImage(v, fname=""):
+    dim = int(np.sqrt(v.shape[0]))
+    v = v.reshape((dim, dim))
+    v = np.array(v * 255, dtype = np.uint8)
+    img = Image.fromarray(v)
+    if fname != "":
+        img.save(fname)
+    return img

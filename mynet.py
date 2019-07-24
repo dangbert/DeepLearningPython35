@@ -11,6 +11,7 @@ algorithm for a feedforward neural network.
 import random
 import pickle
 import os
+import sys
 
 # Third-party libraries
 import numpy as np
@@ -36,7 +37,8 @@ class Network(object):
         # creates an np array for layers 0...num_layers-1
         #   for a given layer col 0 = vector of weights for connections
         #   from node 0 (in cur layer) to next layer's nodes
-        self.weights = [np.random.rand(sizes[i+1], sizes[i])
+        # TODO: network still trains slower than orignal, why? (1 epoch should get close to 90% accuracy)
+        self.weights = [np.random.randn(sizes[i+1], sizes[i])
                         for i in range(self.num_layers-1)]
 
     # pickle data in this class as a backup
@@ -56,10 +58,62 @@ class Network(object):
         f.close()
         #print("*** network loaded from '" + filename + "' ***")
 
-    # TODO: create SGD function
-    #def SGD(self, training_data, epochs, mini_batch_size, eta,
-    #        test_data=None, start_epoch=1):
+    def SGD(self, training_data, epochs, mini_batch_size, rate,
+            test_data=None, start_epoch=1):
+        """Train the neural network using mini-batch stochastic
+        gradient descent.  The ``training_data`` is a list of tuples
+        ``(x, y)`` representing the training inputs and the desired
+        outputs.  The other non-optional parameters are
+        self-explanatory.  If ``test_data`` is provided then the
+        network will be evaluated against the test data after each
+        epoch, and partial progress printed out.  This is useful for
+        tracking progress, but slows things down substantially."""
+        backup_dir = "backups"
+        if not os.path.exists(backup_dir):
+            os.makedirs(backup_dir)
+        if start_epoch == 1:
+            self.save(backup_dir + "/initial.pkl")
 
+        training_data = list(training_data)
+        n = len(training_data)
+
+        if test_data:
+            test_data = list(test_data)
+            n_test = len(test_data)
+            print("INITIAL: {} / {}".format(self.test(test_data), n_test));
+
+        for n in range(start_epoch, epochs+1):
+            sys.stdout.flush()
+            random.shuffle(training_data)
+            mini_batches = [
+                training_data[k:k+mini_batch_size]
+                for k in range(0, n, mini_batch_size)]
+            for mini_batch in mini_batches:
+                self.updateMiniBatch(mini_batch, rate)
+            if test_data:
+                print("Epoch {} : {} / {}".format(n, self.test(test_data), n_test));
+            else:
+                print("Epoch {} complete".format(n))
+
+            if n % 5 == 0:
+                self.save(backup_dir + "/latest.pkl")
+            if n % 25 == 0:
+                self.save(backup_dir + "/epoch" + str(n) + ".pkl")
+
+        self.save(backup_dir + "/epoch" + str(epochs) + ".pkl")
+        print("\ntraining complete (reached epoch" + str(epochs) + ")")
+
+    def test(self, test_data):
+        """Return the number of test inputs for which the neural
+        network outputs the correct result. Note that the neural
+        network's output is assumed to be the index of whichever
+        neuron in the final layer has the highest activation."""
+        test_results = [(np.argmax(self.getOutput(x)), y)
+                        for (x, y) in test_data]
+        return sum(int(x == y) for (x, y) in test_results)
+
+    # TODO: there's a way to more efficiently do this
+    # (combining all data in the batch into a single array...)
     def updateMiniBatch(self, miniBatch, rate):
         """Update the network's weights and biases by applying
         gradient descent using backpropagation to a single mini batch.
