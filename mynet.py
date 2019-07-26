@@ -33,6 +33,7 @@ class Network(object):
         self.sizes = sizes
         # creates a column vector for each layer (except the first)
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
+        self.epoch = 0 # meta-param (how many epochs of training we've undergone)
 
         # creates an np array for layers 0...num_layers-1
         #   for a given layer col 0 = vector of weights for connections
@@ -43,19 +44,26 @@ class Network(object):
 
     # pickle data in this class as a backup
     # https://stackoverflow.com/a/2842727
-    def save(self, filename):
+    # take the given net (not self) and pickle its contents into a file
+    @staticmethod
+    def save(self, net, filename):
         if os.path.exists(filename):
           os.remove(filename)
         f = open(filename, 'wb')
-        pickle.dump(self.__dict__, f, 2)
+        pickle.dump(note.self.__dict__, f, 2)
         f.close()
         print("*** network saved to '" + filename + "' ***")
 
-    # load data into this class from pickle file
+    # load data from pickle file to intialize it as a network
+    # (returns a Network object)
+    @staticmethod
     def load(self, filename):
+        # dummy-weights for initaliztion (will be overwritten by pickel file anyway)
+        tmp =  network.Network([784, 30, 10])
         f = open(filename, 'rb')
-        self.__dict__.update(pickle.load(f))
+        tmp.__dict__.update(pickle.load(f))
         f.close()
+        return tmp # return new instance of a Network
         #print("*** network loaded from '" + filename + "' ***")
 
     def SGD(self, training_data, epochs, mini_batch_size, rate,
@@ -75,30 +83,31 @@ class Network(object):
             self.save(backup_dir + "/initial.pkl")
 
         training_data = list(training_data)
-        n = len(training_data)
+        n_train = len(training_data)
 
         if test_data:
             test_data = list(test_data)
             n_test = len(test_data)
             print("INITIAL: {} / {}".format(self.test(test_data), n_test));
 
-        for n in range(start_epoch, epochs+1):
+        for i in range(start_epoch, epochs+1):
+            self.epoch += 1
             sys.stdout.flush()
             random.shuffle(training_data)
             mini_batches = [
                 training_data[k:k+mini_batch_size]
-                for k in range(0, n, mini_batch_size)]
+                for k in range(0, n_train, mini_batch_size)]
             for mini_batch in mini_batches:
                 self.updateMiniBatch(mini_batch, rate)
             if test_data:
-                print("Epoch {} : {} / {}".format(n, self.test(test_data), n_test));
+                print("Epoch {} : {} / {}".format(i, self.test(test_data), n_test));
             else:
-                print("Epoch {} complete".format(n))
+                print("Epoch {} complete".format(i))
 
-            if n % 5 == 0:
+            if i % 5 == 0:
                 self.save(backup_dir + "/latest.pkl")
-            if n % 25 == 0:
-                self.save(backup_dir + "/epoch" + str(n) + ".pkl")
+            if i % 25 == 0:
+                self.save(backup_dir + "/epoch" + str(i) + ".pkl")
 
         self.save(backup_dir + "/epoch" + str(epochs) + ".pkl")
         print("\ntraining complete (reached epoch" + str(epochs) + ")")

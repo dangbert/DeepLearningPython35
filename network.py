@@ -85,29 +85,29 @@ class Network(object):
             self.save(backup_dir + "/initial.pkl")
 
         training_data = list(training_data)
-        n = len(training_data)
+        n_train = len(training_data)
 
         if test_data:
             test_data = list(test_data)
             n_test = len(test_data)
             print("INITIAL: {} / {}".format(self.evaluate(test_data), n_test));
 
-        for n in range(start_epoch, epochs+1):
+        for i in range(start_epoch, epochs+1):
             random.shuffle(training_data)
             mini_batches = [
                 training_data[k:k+mini_batch_size]
-                for k in range(0, n, mini_batch_size)]
+                for k in range(0, n_train, mini_batch_size)]
             for mini_batch in mini_batches:
                 self.update_mini_batch(mini_batch, eta)
             if test_data:
-                print("Epoch {} : {} / {}".format(n, self.evaluate(test_data), n_test));
+                print("Epoch {} : {} / {}".format(i,self.evaluate(test_data),n_test));
             else:
-                print("Epoch {} complete".format(n))
+                print("Epoch {} complete".format(i))
 
-            if n % 10 == 0:
+            if i % 5 == 0:
                 self.save(backup_dir + "/latest.pkl")
-            if n % 50 == 0:
-                self.save(backup_dir + "/epoch" + str(n) + ".pkl")
+            if i % 25 == 0:
+                self.save(backup_dir + "/epoch" + str(i) + ".pkl")
 
         self.save(backup_dir + "/epoch" + str(epochs) + ".pkl")
         print("\ntraining complete (reached epoch" + str(epochs) + ")")
