@@ -11,3 +11,6 @@ The testing file (**test.py**) contains all three networks (network.py, network2
 In test.py there are examples of networks configurations with proper comments. I did that to relate with particular chapters from the book.
 
 
+## TODO: Do some cool experiments with visualizing neurons in my network:
+* https://distill.pub/2017/feature-visualization/
+* https://distill.pub/2020/circuits/zoom-in/
