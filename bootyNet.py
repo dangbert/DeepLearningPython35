@@ -34,6 +34,10 @@ def main():
     # over time creating exponentially bigger photos in the datasets
     # (this would help us visualize a high-quality projection of what it
     # thinks a certain concept looks like.
+
+    # also, consider intializing the new universe using the first L-2 layers of the previous universe,
+    # and then adding two random new layers after it?
+    # (instead of starting from scratch)
     gooo() # :)
 
 # oh yes, buckle up please
@@ -55,7 +59,7 @@ def gooo(prev=None, entropyYears=0):
     # pool of unit-level networks allowed in our universe
     # TODO: something with an object for holding a universe of recursive members
     # (e.g. a universe of other comonent-universes that are smaller)
-    pool = []
+    pool = [] # population of network-units to travel around communicating the given concept
     pool.append(cur)
 
     history = {} # map epoch (int) to its performace percentage there on the *test_data*
