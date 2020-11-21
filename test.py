@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+
+#################################################
+# I've modified it just to backup the network
+# It handles running (training/evaluating) all
+# networks provided with the initial code repo.
+# Note: I haven't made any substantial changes.
+#################################################
+
 """
     Testing code for different neural network configurations.
     Adapted for Python 3.5.2
@@ -26,6 +35,7 @@ import network
 
 net = network.Network([784, 5, 10])
 net.SGD(training_data, 30, 10, 3.0, test_data=test_data)
+exit(0)
 
 # ----------------------
 # - network2.py example:

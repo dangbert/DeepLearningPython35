@@ -1,3 +1,9 @@
+#################################################
+# This file was provided with the code repo.
+# It applies to Chapters 3-5.
+# I've made no modifications besides this note.
+#################################################
+
 """network2.py
 ~~~~~~~~~~~~~~
 

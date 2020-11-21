@@ -44,26 +44,27 @@ class Network(object):
 
     # pickle data in this class as a backup
     # https://stackoverflow.com/a/2842727
-    # take the given net (not self) and pickle its contents into a file
-    @staticmethod
-    def save(self, net, filename):
+    ## Incomplete: take the given net (not self) and pickle its contents into a file
+    #@staticmethod
+    def save(self, filename):
         if os.path.exists(filename):
           os.remove(filename)
         f = open(filename, 'wb')
-        pickle.dump(note.self.__dict__, f, 2)
+        #pickle.dump(note.self.__dict__, f, 2)
+        pickle.dump(self.__dict__, f, 2)
         f.close()
         print("*** network saved to '" + filename + "' ***")
 
     # load data from pickle file to intialize it as a network
-    # (returns a Network object)
-    @staticmethod
+    ## Incomplete: (returns a Network object)
+    #@staticmethod
     def load(self, filename):
         # dummy-weights for initaliztion (will be overwritten by pickel file anyway)
         tmp =  network.Network([784, 30, 10])
         f = open(filename, 'rb')
         tmp.__dict__.update(pickle.load(f))
         f.close()
-        return tmp # return new instance of a Network
+        #return tmp # return new instance of a Network
         #print("*** network loaded from '" + filename + "' ***")
 
     def SGD(self, training_data, epochs, mini_batch_size, rate,
@@ -97,8 +98,11 @@ class Network(object):
             mini_batches = [
                 training_data[k:k+mini_batch_size]
                 for k in range(0, n_train, mini_batch_size)]
+            batchNum = 0
             for mini_batch in mini_batches:
+                #print("at mini batch {} of {}".format(batchNum+1, len(mini_batches)))
                 self.updateMiniBatch(mini_batch, rate)
+                batchNum += 1
             if test_data:
                 print("Epoch {} : {} / {}".format(i, self.test(test_data), n_test));
             else:

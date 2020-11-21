@@ -57,12 +57,13 @@ def train():
     mini_batch_size = 10
 
     # train new network
-    net = network.Network([784, 30, 10])
-    #net = network.Network([784, 5, 10])
+    #net = network.Network([784, 30, 10])
+    net = network.Network([784, 5, 10])
     if start_epoch != 1:
         net.load("backups/epoch" + str(start_epoch) + ".pkl")
 
     # start training
+    print("TODO: figure out why this seems to run so much slower compared to (provided) test.py")
     net.SGD(training_data, total_epochs, mini_batch_size, rate, test_data=test_data, start_epoch=start_epoch)
 
 def test():

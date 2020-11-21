@@ -1,5 +1,12 @@
 # %load network.py
 
+#################################################
+# This file was provided with the code repo.
+# It applies to Chapters 1,2
+# I've modified it just to backup the network
+# weight/biases as it runs (with pickle).
+#################################################
+
 """
 network.py
 ~~~~~~~~~~
