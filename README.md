@@ -10,24 +10,27 @@ This is a learning project for developing neural networks from scratch in python
 
 ## Overview
 
-#### My Main Files:
-* `test.py`:
-  * Contains all three networks (network.py, network2.py, network3.py) from the book and it is the starting point to run (i.e. *train and evaluate*) them.
-  * Contains examples of networks configurations with proper comments. I did that to relate with particular chapters from the book.
-* `mynet.py`: TODO
-* `learning-network.ipynb`: Jupyter Notebook for experimenting
-* `bootyNet.py`: incomplete personal idea not directly related to this book
+#### Provided Files:
+> Maybe slightly modified from initial provided code in repo.
 
-#### Provided Files (maybe slightly modified):
-* `network.py`: 
-* `network2.py`: 
-* `network3.py`: 
+* `test.py`:
+  * File for running (training/evaluating) all networks provided with the initial code repo  (see below).  (Note: I haven't made any substantial changes).
+* `network.py`: Neural net implementation provided (with initial repo) for chapters [1](http://neuralnetworksanddeeplearning.com/chap1.html), [2](http://neuralnetworksanddeeplearning.com/chap2.html).
+* `network2.py`: Neural net implementation provided for chapters [3](http://neuralnetworksanddeeplearning.com/chap3.html), [4](http://neuralnetworksanddeeplearning.com/chap4.html), [5](http://neuralnetworksanddeeplearning.com/chap5.html).
+* `network3.py`: Neural net implementation provided for chapter [6](http://neuralnetworksanddeeplearning.com/chap6.html) (the last chapter).
 * mnist files:
   * `mnist.pkl.gz`: mnist data set
   * `expand_mnist.py`
   * `mnist_average_darkness.py`
   * `mnist_loader.py`
   * `mnist_svm.py`
+  
+  
+#### My Personal Files:
+* `test1.py`: My test runner for `mynet.py`
+* `mynet.py`: My neural net implementation based on network.py 
+* `learning-network.ipynb`: Jupyter Notebook for experimenting
+* `bootyNet.py`: incomplete personal idea not directly related to this book
 
 ---
 ## Future Ideas:
