@@ -32,9 +32,18 @@ This is a learning project for developing neural networks from scratch in python
 * `learning-network.ipynb`: Jupyter Notebook for experimenting
 * `bootyNet.py`: incomplete personal idea not directly related to this book
 
+## Build docs:
+````bash
+virtualenv env
+source env/bin/activate
+pip3 install -r requirements.txt
+sudo apt-install latexmk texlive-latex-recommended texlive-latex-extra
+cd docs
+make docs
+````
+
 ---
 ## Future Ideas:
-* TODO: setup sphinx docs
 * Generate adversarial images
 * Implement GAN's?
 * Revisit bootyNet.py and look over my [neural net ideas list](https://keep.google.com/u/0/#NOTE/14hIjnAyM_VcuLiRy_NhfbPioc1V45UAdlQHWkBRois_9T1yieWDTIz5UO2TdYuR7L3q0aahx)

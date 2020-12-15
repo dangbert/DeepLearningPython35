@@ -10,11 +10,10 @@ import numpy as np
 
 # ---------------------
 # test network.py
-#import network
-#import mynet as network
-import trueOrigNetwork as network
+import network as trueOrigNetwork
 # for stealing its save and load functions
 import mynet as helper
+#import mynet as network
 
 # TODO: probably will want to be able to store a universe object
 # in some clean way (that can be recursively bootstrapped)
