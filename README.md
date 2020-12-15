@@ -34,12 +34,16 @@ This is a learning project for developing neural networks from scratch in python
 
 ## Build docs:
 ````bash
+# setup virtualenv (if not done previsouly):
 virtualenv env
 source env/bin/activate
 pip3 install -r requirements.txt
-sudo apt-install latexmk texlive-latex-recommended texlive-latex-extra
 cd docs
-make docs
+# build html docs:
+make html
+# build pdf docs:
+sudo apt-install latexmk texlive-latex-recommended texlive-latex-extra
+make pdflatex
 ````
 
 ---
