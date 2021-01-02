@@ -1,9 +1,12 @@
-"""
-network.py
+r"""
+mynet.py
 ~~~~~~~~~~
 
 A module to implement the stochastic gradient descent learning
 algorithm for a feedforward neural network.
+
+More info: http://neuralnetworksanddeeplearning.com/chap1.html
+
 """
 
 #### Libraries
@@ -19,7 +22,7 @@ import numpy as np
 class Network(object):
 
     def __init__(self, sizes):
-        """The list ``sizes`` contains the number of neurons in the
+        r"""The list ``sizes`` contains the number of neurons in the
         respective layers of the network.  For example, if the list
         was [2, 3, 1] then it would be a three-layer network, with the
         first layer containing 2 neurons, the second layer 3 neurons,
@@ -28,19 +31,39 @@ class Network(object):
         distribution with mean 0, and variance 1.  Note that the first
         layer is assumed to be an input layer, and by convention we
         won't set any biases for those neurons, since biases are only
-        ever used in computing the outputs from later layers."""
+        ever used in computing the outputs from later layers.
+
+        Args:
+            sizes (list): list of layer sizes (e.g. `[2,3,2]`)
+
+        Attributes:
+            sizes (:obj:`list` of :obj:`int`): list of layer sizes (e.g. `[2,3,2]`)
+            num_layers (int): number of layers in network
+            biases (:obj:`list` of :obj:`numpy.ndarray`):
+                stores a column vector for each layer's biases (except the input layer). Initialized randomly using np.random.randn (for a gaussian distribution)
+                example for sizes `[2,3,2]`:
+                $$[\begin{bmatrix} [-0.25]\\ [-0.34]\\ [0.21] \end{bmatrix}, \begin{bmatrix} [-0.88]\\ [0.47]\\ \end{bmatrix}]$$
+
+            weights (:obj:`list` of :obj:`numpy.ndarray`):
+                list of weights in the network (one np array for each layer)
+
+                for a given layer col 0 = vector of weights for connections
+                from node 0 (in cur layer) to next layer's nodes
+                ample for sizes `[2,3,2]`: $$[\begin{bmatrix} [-0.3, -0.01]\\ [2.94, -0.88]\\ [0.91, -1.85] \end{bmatrix}, \begin{bmatrix} [1.62, 1.21, 0.95]\\ [-0.19, -0.68, 0.61]\\ \end{bmatrix}]$$
+                let `w=weights[0]` (stores all weights coming into layer 1 from layer 0)
+                w[j] is the list of weights coming into node j in layer 1,
+                so w_jk = w[j][k] is the weight between the jth neuron in layer 1, and the kth neuron in layer 0.
+
+        """
+
         self.num_layers = len(sizes)
         self.sizes = sizes
-        # creates a column vector for each layer (except the first)
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
         self.epoch = 0 # meta-param (how many epochs of training we've undergone)
 
-        # creates an np array for layers 0...num_layers-1
-        #   for a given layer col 0 = vector of weights for connections
-        #   from node 0 (in cur layer) to next layer's nodes
-        # TODO: network still trains slower than orignal, why? (1 epoch should get close to 90% accuracy)
         self.weights = [np.random.randn(sizes[i+1], sizes[i])
                         for i in range(self.num_layers-1)]
+        # TODO: network still trains slower than orignal, why? (1 epoch should get close to 90% accuracy)
 
     # pickle data in this class as a backup
     # https://stackoverflow.com/a/2842727
