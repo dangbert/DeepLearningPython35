@@ -6,7 +6,7 @@ A module to implement the stochastic gradient descent learning
 algorithm for a feedforward neural network.
 
 More info: http://neuralnetworksanddeeplearning.com/chap1.html
-
+http://neuralnetworksanddeeplearning.com/chap2.html
 """
 
 #### Libraries
@@ -34,7 +34,7 @@ class Network(object):
         ever used in computing the outputs from later layers.
 
         Args:
-            sizes (list): list of layer sizes (e.g. `[2,3,2]`)
+            sizes (:obj:`list` of :obj:`int`): list of layer sizes (e.g. `[2,3,2]`)
 
         Attributes:
             sizes (:obj:`list` of :obj:`int`): list of layer sizes (e.g. `[2,3,2]`)
@@ -47,13 +47,15 @@ class Network(object):
             weights (:obj:`list` of :obj:`numpy.ndarray`):
                 list of weights in the network (one np array for each layer)
 
-                for a given layer col 0 = vector of weights for connections
+                for a given layer, col 0 = vector of weights for connections
                 from node 0 (in cur layer) to next layer's nodes
                 ample for sizes `[2,3,2]`: $$[\begin{bmatrix} [-0.3, -0.01]\\ [2.94, -0.88]\\ [0.91, -1.85] \end{bmatrix}, \begin{bmatrix} [1.62, 1.21, 0.95]\\ [-0.19, -0.68, 0.61]\\ \end{bmatrix}]$$
-                let `w=weights[0]` (stores all weights coming into layer 1 from layer 0)
-                w[j] is the list of weights coming into node j in layer 1,
-                so w_jk = w[j][k] is the weight between the jth neuron in layer 1, and the kth neuron in layer 0.
+                let $w=weights[0]$ (stores all weights coming into layer 1 from layer 0).
 
+                $w[j]$ is the list of weights coming into node $j$ in layer 1,
+                so $w_jk = w[j][k]$ is the weight between the $j$th neuron in layer 1, and the $k$th neuron in layer 0.
+
+                This ordering allows us to calculate activations with: $a' = \sigma(wa+b)$
         """
 
         self.num_layers = len(sizes)
@@ -65,11 +67,13 @@ class Network(object):
                         for i in range(self.num_layers-1)]
         # TODO: network still trains slower than orignal, why? (1 epoch should get close to 90% accuracy)
 
-    # pickle data in this class as a backup
-    # https://stackoverflow.com/a/2842727
-    ## Incomplete: take the given net (not self) and pickle its contents into a file
     #@staticmethod
     def save(self, filename):
+        """
+        pickle data in this class as a backup
+        https://stackoverflow.com/a/2842727
+        Incomplete: take the given net (not self) and pickle its contents into a file
+        """
         if os.path.exists(filename):
           os.remove(filename)
         f = open(filename, 'wb')
@@ -78,17 +82,67 @@ class Network(object):
         f.close()
         print("*** network saved to '" + filename + "' ***")
 
-    # load data from pickle file to intialize it as a network
-    ## Incomplete: (returns a Network object)
     #@staticmethod
     def load(self, filename):
+        """
+        load data from pickle file to intialize it as a network
+        Incomplete: (returns a Network object)
+        """
         # dummy-weights for initaliztion (will be overwritten by pickel file anyway)
-        tmp =  network.Network([784, 30, 10])
+        tmp =  Network([784, 30, 10])
         f = open(filename, 'rb')
         tmp.__dict__.update(pickle.load(f))
         f.close()
         #return tmp # return new instance of a Network
         #print("*** network loaded from '" + filename + "' ***")
+
+
+    def getOutput(self, x):
+        """
+        returns the output layers activations for given input (using feedforward())
+        """
+        _, activations = self.feedforward(x)
+        return activations[-1]
+
+    def feedforward(self, a):
+        """
+        returns list of z values and list of activations at each layer for given input
+        """
+        activations = [a]
+        zs = [np.zeros(a.shape, dtype=float)]   # zs[0] filled with dummy values
+        for b, w in zip(self.biases, self.weights):
+            zs.append(np.dot(w, activations[-1]) + b)
+            activations.append(self.sigmoid(zs[-1]))
+        return zs, activations
+
+    # TODO: there's a way to more efficiently do this
+    # (combining all data in the batch into a single array...)
+    def updateMiniBatch(self, miniBatch, rate):
+        """
+        Perform gradient descent using backpropogation on a single miniBatch
+        and update the network's weights and biases.
+
+
+        Args:
+            miniBatch (:obj:`list` of :obj:`tuples`): List of training inputs / expected outputs (x,y).
+                Calculated changes to the weights and biases will be averaged across this mini batch.
+
+                Note: to train on a single sample, set mini_batch=[(x,y)]
+            rate (:obj:`float`): Learning rate to use for training (e.g. 0.05).
+        """
+        nabla_b = [np.zeros(b.shape) for b in self.biases]
+        nabla_w = [np.zeros(w.shape) for w in self.weights]
+        # average the delta_b, delta_w calculated for each training sample
+        # and adjust the weights, biases using the learning rate
+        for x, y in miniBatch:
+            delta_b, delta_w = self.backprop(x, y)
+            nabla_b = [nb+db for nb, db in zip(nabla_b, delta_b)]
+            nabla_w = [nw+dw for nw, dw in zip(nabla_w, delta_w)]
+        self.biases = [b-(rate/len(miniBatch))*nb
+                       for b, nb in zip(self.biases, nabla_b)]
+        self.weights = [w-(rate/len(miniBatch))*nw
+                        for w, nw in zip(self.weights, nabla_w)]
+
 
     def SGD(self, training_data, epochs, mini_batch_size, rate,
             test_data=None, start_epoch=1):
@@ -112,7 +166,7 @@ class Network(object):
         if test_data:
             test_data = list(test_data)
             n_test = len(test_data)
-            print("INITIAL: {} / {}".format(self.test(test_data), n_test));
+            print("INITIAL: {} / {}".format(self.test(test_data), n_test))
 
         for i in range(start_epoch, epochs+1):
             self.epoch += 1
@@ -127,7 +181,7 @@ class Network(object):
                 self.updateMiniBatch(mini_batch, rate)
                 batchNum += 1
             if test_data:
-                print("Epoch {} : {} / {}".format(i, self.test(test_data), n_test));
+                print("Epoch {} : {} / {}".format(i, self.test(test_data), n_test))
             else:
                 print("Epoch {} complete".format(i))
 
@@ -147,28 +201,6 @@ class Network(object):
         test_results = [(np.argmax(self.getOutput(x)), y)
                         for (x, y) in test_data]
         return sum(int(x == y) for (x, y) in test_results)
-
-    # TODO: there's a way to more efficiently do this
-    # (combining all data in the batch into a single array...)
-    def updateMiniBatch(self, miniBatch, rate):
-        """Update the network's weights and biases by applying
-        gradient descent using backpropagation to a single mini batch.
-        The ``mini_batch`` is a list of tuples ``(x, y)``, and ``rate``
-        is the learning rate.
-        note: to train on a single sample, set mini_batch=[(x,y)]
-        """
-        nabla_b = [np.zeros(b.shape) for b in self.biases]
-        nabla_w = [np.zeros(w.shape) for w in self.weights]
-        # average the delta_b, delta_w calculated for each training sample
-        # and adjust the weights, biases using the learning rate
-        for x, y in miniBatch:
-            delta_b, delta_w = self.backprop(x, y)
-            nabla_b = [nb+db for nb, db in zip(nabla_b, delta_b)]
-            nabla_w = [nw+dw for nw, dw in zip(nabla_w, delta_w)]
-        self.biases = [b-(rate/len(miniBatch))*nb
-                       for b, nb in zip(self.biases, nabla_b)]
-        self.weights = [w-(rate/len(miniBatch))*nw
-                        for w, nw in zip(self.weights, nabla_w)]
 
     # do backpropogation
     # returns nabla_b, nabla_w
@@ -208,33 +240,26 @@ class Network(object):
                     nabla_w[index][j][k] = errors[l][j]*activations[l-1][k]
         return (nabla_b, nabla_w)
 
-    # returns the output layers activations for given input
-    def getOutput(self, x):
-        _, activations = self.feedforward(x)
-        return activations[-1]
-
-    # returns list of z values and list of activations at each layer for given input
-    def feedforward(self, a):
-        activations = [a]
-        zs = [np.zeros(a.shape, dtype=float)]   # zs[0] filled with dummy values
-        for b, w in zip(self.biases, self.weights):
-            zs.append(np.dot(w, activations[-1]) + b)
-            activations.append(self.sigmoid(zs[-1]))
-        return zs, activations
-
     # returns the vector of partial derivatives for
     # the cost with respect to output activations
     def cost_derivative(self, output_activations, y):
-        """Return the vector of partial derivatives \partial C_x /
-        \partial a for the output activations."""
+        r"""
+        Return the vector of partial derivatives $\partial C_x / \partial a$
+        for the output activations.
+        """
         return (output_activations-y)
 
     # signmoid function
-    @staticmethod
-    def sigmoid(z):
+    #@staticmethod
+    def sigmoid(self, z):
+        """
+        Implements the sigmoid function.
+        https://en.wikipedia.org/wiki/Sigmoid_function
+        """
         return 1.0 / (1.0 + np.exp(-z))
 
     # derivative of sigmoid function
-    @staticmethod
-    def sigmoid_prime(z):
-        return sigmoid(z) * (1.0 - sigmoid(z))
+    #@staticmethod
+    def sigmoid_prime(self, z):
+        """Derivative of the sigmoid function."""
+        return self.sigmoid(z) * (1.0 - self.sigmoid(z))

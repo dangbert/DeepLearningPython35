@@ -15,3 +15,4 @@ DeepLearningPython35
    network3
    test
    test1
+   tests

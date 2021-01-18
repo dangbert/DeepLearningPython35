@@ -20,7 +20,10 @@ help:
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 docs:
-	sphinx-apidoc -o source/_modules ..
 	make html
 	# sudo apt-install latexmk texlive-latex-recommended texlive-latex-extra
 	make latexpdf
+
+# run only when new files have been created etc
+modules:
+	sphinx-apidoc -o source/_modules ..
