@@ -67,35 +67,36 @@ class Network(object):
                         for i in range(self.num_layers-1)]
         # TODO: network still trains slower than orignal, why? (1 epoch should get close to 90% accuracy)
 
-    #@staticmethod
     def save(self, filename):
         """
-        pickle data in this class as a backup
+        pickle data in this class as a backup to desired filename
         https://stackoverflow.com/a/2842727
-        Incomplete: take the given net (not self) and pickle its contents into a file
         """
         if os.path.exists(filename):
           os.remove(filename)
         f = open(filename, 'wb')
-        #pickle.dump(note.self.__dict__, f, 2)
         pickle.dump(self.__dict__, f, 2)
         f.close()
         print("*** network saved to '" + filename + "' ***")
 
-    #@staticmethod
     def load(self, filename):
         """
-        load data from pickle file to intialize it as a network
+        load data from pickle file into this class to overwrite its data
         Incomplete: (returns a Network object)
         """
-        # dummy-weights for initaliztion (will be overwritten by pickel file anyway)
-        tmp =  Network([784, 30, 10])
         f = open(filename, 'rb')
-        tmp.__dict__.update(pickle.load(f))
+        self.__dict__.update(pickle.load(f))
         f.close()
-        #return tmp # return new instance of a Network
-        #print("*** network loaded from '" + filename + "' ***")
+        print("*** network loaded from '" + filename + "' ***")
 
+    def test(self, test_data):
+        """Return the number of test inputs for which the neural
+        network outputs the correct result. Note that the neural
+        network's output is assumed to be the index of whichever
+        neuron in the final layer has the highest activation."""
+        test_results = [(np.argmax(self.getOutput(x)), y)
+                        for (x, y) in test_data]
+        return sum(int(x == y) for (x, y) in test_results)
 
     def getOutput(self, x):
         """
@@ -115,8 +116,11 @@ class Network(object):
             activations.append(self.sigmoid(zs[-1]))
         return zs, activations
 
-    # TODO: there's a way to more efficiently do this
-    # (combining all data in the batch into a single array...)
+    # TODO: there's a way to more efficiently do this!
+    #   (combining all data in the batch into a single matrix, as the book mentions)
+    #   (takes advantage of parallelization in CPU and GPU's)
+    #   try to work this out myself but if needed reference:
+    #   https://medium.com/@hindsellouk13/matrix-based-back-propagation-fe143ce2b2df
     def updateMiniBatch(self, miniBatch, rate):
         """
         Perform gradient descent using backpropogation on a single miniBatch
@@ -166,7 +170,8 @@ class Network(object):
         if test_data:
             test_data = list(test_data)
             n_test = len(test_data)
-            print("INITIAL: {} / {}".format(self.test(test_data), n_test))
+            n_correct = self.test(test_data)
+            print("INITIAL: {:.2f}% -- {} / {}".format((n_correct/n_test)*100, n_correct, n_test))
 
         for i in range(start_epoch, epochs+1):
             self.epoch += 1
@@ -181,71 +186,55 @@ class Network(object):
                 self.updateMiniBatch(mini_batch, rate)
                 batchNum += 1
             if test_data:
-                print("Epoch {} : {} / {}".format(i, self.test(test_data), n_test))
+                n_correct = self.test(test_data)
+                print("Epoch {}: {:.2f}% -- {} / {}".format(i, (n_correct/n_test*100), n_correct, n_test))
             else:
                 print("Epoch {} complete".format(i))
 
-            if i % 5 == 0:
+            if i % 10 == 0:
                 self.save(backup_dir + "/latest.pkl")
             if i % 25 == 0:
                 self.save(backup_dir + "/epoch" + str(i) + ".pkl")
 
         self.save(backup_dir + "/epoch" + str(epochs) + ".pkl")
+        self.save(backup_dir + "/latest.pkl")
         print("\ntraining complete (reached epoch" + str(epochs) + ")")
 
-    def test(self, test_data):
-        """Return the number of test inputs for which the neural
-        network outputs the correct result. Note that the neural
-        network's output is assumed to be the index of whichever
-        neuron in the final layer has the highest activation."""
-        test_results = [(np.argmax(self.getOutput(x)), y)
-                        for (x, y) in test_data]
-        return sum(int(x == y) for (x, y) in test_results)
-
-    # do backpropogation
-    # returns nabla_b, nabla_w
-    # (partial dertivatives of biases and weights wrt. cost function)
-    def backprop(self, cur, expected):
-        # TODO: also use zs from this function?
-        zs, activations = self.feedforward(cur)
-
+    def backprop(self, x, y):
+        """
+        do backpropagation
+        returns nabla_b, nabla_w (partial dertivatives of biases and weights wrt. cost function)
+        """
+        zs, activations = self.feedforward(x)
         # note: nabla_b is the same as the "error" calculated at each node
         nabla_b = [np.zeros(b.shape, dtype=float) for b in self.biases]
         nabla_w = [np.zeros(w.shape, dtype=float) for w in self.weights]
+        # array to store the calculated error at each node as we backpropagate
+        errors = [ np.zeros((n, 1), dtype=float) for n in self.sizes[1:] ]
 
-        # array to store the calculated error at each node as we backpropogate
-        errors = [np.zeros((n, 1), dtype=float) for n in self.sizes]
-        # traverse layers backwards
-        # TODO: consider adding a dummy layer of to the beginning of the weights and biases vectors
-        #       so the indicies make sense and match up with the errors array, etc
-        for l in range(len(self.sizes)-1, 0, -1):
-            index = l-1 # notes: subtract 1 from layer number to index into weights and biases arrays
-            # traverse nodes in layer l
-            for j in range(self.sizes[l]):
-                # calculate errors[l][j]
-                al_j = activations[l][j]
-                # if we're on the last layer
-                if l == len(self.sizes)-1:  # this is the equivalent of me calculating delta
-                    # TODO: use sigmoid_prime and cost_derivative directly here
-                    errors[l][j] = (al_j-expected[j]) * al_j*(1-al_j) # BP1
-                else:
-                    # BP2
-                    total = 0
-                    for k in range(0, self.sizes[l+1]):
-                        total += self.weights[index+1][k][j] * errors[l+1][k][0]
-                    errors[l][j] = al_j*(1-al_j) * total
-
-                nabla_b[index][j] = errors[l][j]
-                for k in range(0, self.sizes[l-1]):
-                    nabla_w[index][j][k] = errors[l][j]*activations[l-1][k]
+        # using the index -l we will traverse the layers backwards
+        #   (convenient for indexing into weights and biases arrays)
+        for l in range(1, len(self.sizes)):
+            # NOTE: using the matrix forms of the equations instead of looping over the nodes in the
+            #   current layer is way faster (50x difference in one test)
+            if l == 1: # BP1:
+                errors[-l] = self.cost_derivative(activations[-l], y) * self.sigmoid_prime(zs[-l])
+            else:      # BP2:
+                # (np.multiply() does the hadmard product, np.dot() does matrix multiplication)
+                errors[-l] = np.multiply( np.dot(self.weights[-l+1].transpose(),errors[-l+1]),  self.sigmoid_prime(zs[-l]) )
+            nabla_b[-l] = errors[-l] # BP3
+            nabla_w[-l] = np.dot(errors[-l], activations[-l-1].transpose()) # BP4 (a matrix form)
         return (nabla_b, nabla_w)
 
-    # returns the vector of partial derivatives for
-    # the cost with respect to output activations
     def cost_derivative(self, output_activations, y):
         r"""
         Return the vector of partial derivatives $\partial C_x / \partial a$
         for the output activations.
+        (For the quadratic cost function $C$ in particular)
+
+        Args:
+            output_activations: vector of output activations
+            y: expected output vector
         """
         return (output_activations-y)
 

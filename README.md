@@ -32,12 +32,20 @@ This is a learning project for developing neural networks from scratch in python
 * `learning-network.ipynb`: Jupyter Notebook for experimenting
 * `bootyNet.py`: incomplete personal idea not directly related to this book
 
-## Build docs:
+
+## Run unit tests:
 ````bash
-# setup virtualenv (if not done previsouly):
+# setup virtualenv (if not done previously):
 virtualenv env
 source env/bin/activate
 pip3 install -r requirements.txt
+pytest -s
+````
+
+
+## Build docs:
+````bash
+source env/bin/activate
 cd docs
 # build html docs:
 make html
