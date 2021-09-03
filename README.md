@@ -51,14 +51,14 @@ cd docs
 make html
 # build pdf docs:
 sudo apt-install latexmk texlive-latex-recommended texlive-latex-extra
-make pdflatex
+make latexpdf
 ````
 
 ---
 ## Future Ideas:
 * Generate adversarial images
 * Implement GAN's?
-* Revisit bootyNet.py and look over my [neural net ideas list](https://keep.google.com/u/0/#NOTE/14hIjnAyM_VcuLiRy_NhfbPioc1V45UAdlQHWkBRois_9T1yieWDTIz5UO2TdYuR7L3q0aahx)
+* Revisit bootyNet.py and look over my [neural net ideas list](https://keep.google.com/u/0/#NOTE/14hIjnAyM_VcuLiRy_NhfbPioc1V45UAdlQHWkBRois_9T1yieWDTIz5UO2TdYuR7L3q0aahx), [notion list](https://www.notion.so/AI-Ideas-37a34893799549879eb8dbe5760270f9)
 * Do some cool experiments with visualizing neurons in my network:
   * https://distill.pub/2017/feature-visualization/
   * https://distill.pub/2020/circuits/zoom-in/
