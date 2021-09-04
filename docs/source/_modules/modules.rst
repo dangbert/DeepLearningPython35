@@ -4,11 +4,8 @@ DeepLearningPython35
 .. toctree::
    :maxdepth: 4
 
-   bootyNet
-   expand_mnist
-   mnist_average_darkness
-   mnist_loader
-   mnist_svm
+   experiments
+   mnist
    mynet
    network
    network2
