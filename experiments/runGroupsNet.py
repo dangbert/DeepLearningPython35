@@ -1,19 +1,29 @@
 #!/usr/bin/env python3
 
+import os, sys
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+PARENT_DIR = os.path.dirname(BASE_DIR)
+sys.path.append(PARENT_DIR)
+
 # ----------------------
 # - read the input data:
 import mnist_loader
-import os
 import glob
 import numpy as np
 import shutil
+
 
 # ---------------------
 # test network.py
 #import network
 #import mynet as network
-import mynetExperiment as network
 #import costPrediction as network
+
+
+import GroupsNet as network
+
+#import mynet as network
+
 
 def main():
     training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
@@ -26,7 +36,8 @@ def train():
     # load dataset
     training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
 
-    start_epoch, total_epochs = 1, 100
+    #start_epoch, total_epochs = 100, 2500
+    start_epoch, total_epochs = 1, 2000
     #start_epoch, total_epochs = 15, 150
     rate, mini_batch_size = 3.0, 10
 

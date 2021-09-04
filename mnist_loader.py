@@ -9,6 +9,9 @@ function usually called by our neural network code.
 """
 
 #### Libraries
+import os, sys
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+DATA_PATH = os.path.join(BASE_DIR, 'mnist.pkl.gz')
 # Standard library
 import pickle
 import gzip
@@ -16,6 +19,8 @@ import gzip
 # Third-party libraries
 from PIL import Image
 import numpy as np
+
+
 
 def load_data():
     """Return the MNIST data as a tuple containing the training data,
@@ -36,7 +41,7 @@ def load_data():
     That's done in the wrapper function ``load_data_wrapper()``, see
     below.
     """
-    f = gzip.open('mnist.pkl.gz', 'rb')
+    f = gzip.open(DATA_PATH, 'rb')
     training_data, validation_data, test_data = pickle.load(f, encoding="latin1")
     f.close()
     return (training_data, validation_data, test_data)
