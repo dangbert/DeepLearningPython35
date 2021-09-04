@@ -6,16 +6,16 @@ unit test mynet.py against network.py (the provided implementation)
 """
 
 import pytest
-import os
-import sys
+import os, sys
 # enable imports from parent folder of this script:
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.dirname(BASE_DIR))
 import copy
 import numpy as np
 import random
 from timeit import default_timer as timer
 
-import mnist_loader
+from mnist import mnist_loader
 import network
 import mynet
 

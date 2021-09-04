@@ -2,7 +2,7 @@
 
 # ----------------------
 # - read the input data:
-import mnist_loader
+from mnist import mnist_loader
 import os
 import glob
 import numpy as np
@@ -12,6 +12,7 @@ import shutil
 # test network.py
 #import network
 import mynet as network
+#import costPrediction as network
 
 def main():
     training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
@@ -56,6 +57,7 @@ def train():
     #print("Test data:\t {} items".format(len(test_data)))
 
     start_epoch, total_epochs = 1, 15
+    #start_epoch, total_epochs = 15, 150
     rate, mini_batch_size = 3.0, 10
 
     # train new network

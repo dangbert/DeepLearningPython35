@@ -7,7 +7,7 @@ sys.path.append(PARENT_DIR)
 
 # ----------------------
 # - read the input data:
-import mnist_loader
+from mnist import mnist_loader
 import glob
 import numpy as np
 import shutil

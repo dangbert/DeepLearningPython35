@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 # bootyNet = "bootstrapping netwok"
 
+import os, sys
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+PARENT_DIR = os.path.dirname(BASE_DIR)
+sys.path.append(PARENT_DIR)
+
 # ----------------------
 # - read the input data:
 import mnist_loader
-import os
 import glob
 import numpy as np
 

@@ -27,7 +27,7 @@
 def main():
     # ----------------------
     # - read the input data:
-    import mnist_loader
+    from mnist import mnist_loader
     training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
     training_data = list(training_data)
     # ---------------------

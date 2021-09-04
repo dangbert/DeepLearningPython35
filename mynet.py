@@ -53,7 +53,7 @@ class Network(object):
                 let $w=weights[0]$ (stores all weights coming into layer 1 from layer 0).
 
                 $w[j]$ is the list of weights coming into node $j$ in layer 1,
-                so $w_jk = w[j][k]$ is the weight between the $j$th neuron in layer 1, and the $k$th neuron in layer 0.
+                so $w_{jk} = w[j][k]$ is the weight between the $j$th neuron in layer 1, and the $k$th neuron in layer 0.
 
                 This ordering allows us to calculate activations with: $a' = \sigma(wa+b)$
         """
