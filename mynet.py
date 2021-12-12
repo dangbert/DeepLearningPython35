@@ -96,7 +96,17 @@ class Network(object):
         neuron in the final layer has the highest activation."""
         test_results = [(np.argmax(self.getOutput(x)), y)
                         for (x, y) in test_data]
+        # count the instances where the most activate output neuron matches the expected output index
         return sum(int(x == y) for (x, y) in test_results)
+
+    # TODO: have this also return the number correct (like test() does above to replace it)
+    def testQuadraticCost(self, test_data):
+        """Return the quadratic cost of the provided test_data.
+        Where test_data is a list of 2-tuples, the first element
+        being an input vector to the network, and the second as
+        the ground-truth output vector."""
+        diffs = [self.getOutput(x) - y for (x, y) in test_data] # list of differences between output vectors
+        return 1 / (2 * len(test_data)) * sum([np.sum(d * d) for d in diffs]) # 1/(2n) * (sum squared errors)
 
     def getOutput(self, x):
         """
@@ -152,8 +162,8 @@ class Network(object):
             test_data=None, start_epoch=1):
         """Train the neural network using mini-batch stochastic
         gradient descent.  The ``training_data`` is a list of tuples
-        ``(x, y)`` representing the training inputs and the desired
-        outputs.  The other non-optional parameters are
+        ``(x, y)`` representing the training inputs (a vector) and the desired
+        outputs (as an integer index, OR as a vector).  The other non-optional parameters are
         self-explanatory.  If ``test_data`` is provided then the
         network will be evaluated against the test data after each
         epoch, and partial progress printed out.  This is useful for
@@ -167,11 +177,21 @@ class Network(object):
         training_data = list(training_data)
         n_train = len(training_data)
 
+        test_data = list(test_data) if test_data else None
+
+        def getCost():
+            """wrapper function (for now) for both ways of evaluating cost"""
+            cost, n_test, n_correct = -1, len(test_data), -1
+            if isinstance(test_data[0][1], np.ndarray):
+                # test data was provided as output vectors (rather than as a simple index):
+                cost = self.testQuadraticCost(test_data)
+            else:
+                n_correct = self.test(test_data)
+            return cost, n_test, n_correct
+
         if test_data:
-            test_data = list(test_data)
-            n_test = len(test_data)
-            n_correct = self.test(test_data)
-            print("INITIAL: {:.2f}% -- {} / {}".format((n_correct/n_test)*100, n_correct, n_test))
+            cost, n_test, n_correct = getCost()
+            print("INITIAL COST: {:.4f}\tcorrect: {:.2f}% -- {} / {}".format(cost, (n_correct/n_test)*100, n_correct, n_test))
 
         for i in range(start_epoch, epochs+1):
             self.epoch += 1
@@ -185,9 +205,10 @@ class Network(object):
                 #print("at mini batch {} of {}".format(batchNum+1, len(mini_batches)))
                 self.updateMiniBatch(mini_batch, rate)
                 batchNum += 1
+
             if test_data:
-                n_correct = self.test(test_data)
-                print("Epoch {}: {:.2f}% -- {} / {}".format(i, (n_correct/n_test*100), n_correct, n_test))
+                cost, n_test, n_correct = getCost()
+                print("Epoch {}: COST: {:.4f}\tcorrect: {:.2f}% -- {} / {}".format(i, cost, (n_correct/n_test)*100, n_correct, n_test))
             else:
                 print("Epoch {} complete".format(i))
 
