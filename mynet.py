@@ -18,10 +18,11 @@ import sys
 
 # Third-party libraries
 import numpy as np
+from datetime import datetime
 
 class Network(object):
 
-    def __init__(self, sizes):
+    def __init__(self, sizes, backupDir="backups", name=datetime.now().strftime('%Y_%m_%d_%H_%M_%S')):
         r"""The list ``sizes`` contains the number of neurons in the
         respective layers of the network.  For example, if the list
         was [2, 3, 1] then it would be a three-layer network, with the
@@ -35,6 +36,7 @@ class Network(object):
 
         Args:
             sizes (:obj:`list` of :obj:`int`): list of layer sizes (e.g. `[2,3,2]`)
+            name (str): optional, used for setting filepath for saved weights.
 
         Attributes:
             sizes (:obj:`list` of :obj:`int`): list of layer sizes (e.g. `[2,3,2]`)
@@ -65,29 +67,42 @@ class Network(object):
 
         self.weights = [np.random.randn(sizes[i+1], sizes[i])
                         for i in range(self.num_layers-1)]
-        # TODO: network still trains slower than orignal, why? (1 epoch should get close to 90% accuracy)
+
+        self.name = name
+        self.backupDir = "{}/{}".format(backupDir, self.name)
 
     def save(self, filename):
         """
         pickle data in this class as a backup to desired filename
         https://stackoverflow.com/a/2842727
+
+        Args:
+            filename (str): name fo file to save (relative to self.backupDir)
         """
+        if not os.path.exists(self.backupDir):
+            os.makedirs(self.backupDir)
+
+        filename = os.path.join(self.backupDir, filename)
         if os.path.exists(filename):
           os.remove(filename)
-        f = open(filename, 'wb')
-        pickle.dump(self.__dict__, f, 2)
-        f.close()
+        with open(filename, 'wb') as f:
+            pickle.dump(self.__dict__, f, 2)
         print("*** network saved to '" + filename + "' ***")
 
-    def load(self, filename):
+    def load(self, fname):
         """
-        load data from pickle file into this class to overwrite its data
-        Incomplete: (returns a Network object)
+        load data from pickle file into this class to overwrite its data.
+    
+        Args:
+            fname (str): name of pickle file to open.
+                This path is first tried relative to self.backupDir, then its tried by iteself as a fallback.
         """
-        f = open(filename, 'rb')
-        self.__dict__.update(pickle.load(f))
-        f.close()
-        print("*** network loaded from '" + filename + "' ***")
+
+        relName = os.path.join(self.backupDir, fname)
+        fname = relName if os.path.exists(relName) else fname
+        with open(fname, 'rb') as f:
+            self.__dict__.update(pickle.load(f))
+        print("*** network loaded from '" + fname + "' ***")
 
     def test(self, test_data):
         """Return the number of test inputs for which the neural
@@ -168,11 +183,8 @@ class Network(object):
         network will be evaluated against the test data after each
         epoch, and partial progress printed out.  This is useful for
         tracking progress, but slows things down substantially."""
-        backup_dir = "backups"
-        if not os.path.exists(backup_dir):
-            os.makedirs(backup_dir)
         if start_epoch == 1:
-            self.save(backup_dir + "/initial.pkl")
+            self.save("initial.pkl")
 
         training_data = list(training_data)
         n_train = len(training_data)
@@ -213,13 +225,13 @@ class Network(object):
                 print("Epoch {} complete".format(i))
 
             if i % 10 == 0:
-                self.save(backup_dir + "/latest.pkl")
+                self.save("latest.pkl")
             if i % 25 == 0:
-                self.save(backup_dir + "/epoch" + str(i) + ".pkl")
+                self.save("epoch{}.pkl".format(i))
 
-        self.save(backup_dir + "/epoch" + str(epochs) + ".pkl")
-        self.save(backup_dir + "/latest.pkl")
-        print("\ntraining complete (reached epoch" + str(epochs) + ")")
+        self.save("epoch{}.pkl".format(i))
+        self.save("latest.pkl")
+        print("\ntraining complete (reached epoch {})".format(epochs))
 
     def backprop(self, x, y):
         """

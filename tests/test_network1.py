@@ -6,6 +6,7 @@ unit test mynet.py against network.py (the provided implementation)
 """
 
 import pytest
+from deepdiff import DeepDiff
 import os, sys
 # enable imports from parent folder of this script:
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -14,6 +15,7 @@ import copy
 import numpy as np
 import random
 from timeit import default_timer as timer
+from datetime import datetime
 
 from mnist import mnist_loader
 import network
@@ -121,7 +123,7 @@ def test_update_mini_batch():
     print("reference: update_mini_batch() cumulative time: {:.4f} sec".format(refTotalSec))
     print("mine:      update_mini_batch() cumulative time: {:.4f} sec\n\n".format(myTotalSec))
 
-def test_SGD():
+def test_SGD(tmp_path):
     """
     test that SGD() behaves the same across the two implemenations
     """
@@ -131,7 +133,7 @@ def test_SGD():
     test_data = list(test_data)[:100]
 
     net = network.Network([784, 5, 10])
-    mine = mynet.Network([784, 5, 10])
+    mine = mynet.Network([784, 5, 10], backupDir=tmp_path)
     mine.weights, mine.biases, mine.sizes = copy.deepcopy(net.weights), copy.deepcopy(net.biases), copy.deepcopy(net.sizes)
 
     total_epochs, rate, mini_batch_size = 20, 3.0, 8
@@ -152,3 +154,24 @@ def test_SGD():
     #import pdb; pdb.set_trace()
     assert(all([np.allclose(b, mb) for b, mb in zip(net.biases, mine.biases)]))
     assert(all([np.allclose(w, mw) for w, mw in zip(net.weights, mine.weights)]))
+
+def test_save_load(tmp_path):
+    """
+    verify saving/loading from file is functional.
+    (tmp_path is a pytext fixture https://docs.pytest.org/en/6.2.x/tmpdir.html)
+    """
+    name = "unit_test--{}".format(datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
+    net1 = mynet.Network([784, 5, 10], backupDir=tmp_path, name=name)
+    print('tmp_path = ')
+    print(tmp_path)
+
+    net1.save('initial.pkl')
+    assert(os.path.exists(os.path.join(net1.backupDir, 'initial.pkl')))
+
+    net2 = mynet.Network([1, 2], backupDir=tmp_path, name=name)
+    net2.load('initial.pkl')
+
+    diff = DeepDiff(net1.__dict__, net2.__dict__)
+    print('diff = ')
+    print(diff)
+    assert(bool(diff) == False)

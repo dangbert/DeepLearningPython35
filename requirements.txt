@@ -14,6 +14,7 @@ chardet==3.0.4
 colorama==0.4.3
 contextlib2==0.6.0
 decorator==4.4.2
+deepdiff==5.7.0
 defusedxml==0.6.0
 distlib==0.3.0
 distro==1.4.0
@@ -50,6 +51,7 @@ nbformat==5.0.8
 nest-asyncio==1.4.3
 notebook==6.1.5
 numpy==1.19.4
+ordered-set==4.0.2
 packaging==20.3
 pandocfilters==1.4.3
 parso==0.7.1
