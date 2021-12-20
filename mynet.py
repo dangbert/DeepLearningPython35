@@ -102,7 +102,7 @@ class Network(object):
         fname = relName if os.path.exists(relName) else fname
         with open(fname, 'rb') as f:
             self.__dict__.update(pickle.load(f))
-        print("*** network loaded from '" + fname + "' ***")
+        print("*** network loaded from '{}' at epoch {} ***".format(fname, self.epoch))
 
     def test(self, test_data):
         """Return the number of test inputs for which the neural
@@ -132,7 +132,8 @@ class Network(object):
 
     def feedforward(self, a):
         """
-        returns list of z values and list of activations at each layer for given input
+        returns list of z values and list of activations at each layer for a given input.
+        (the first layer's "activations" will be identical to the inputs provided to this function).
         """
         activations = [a]
         zs = [np.zeros(a.shape, dtype=float)]   # zs[0] filled with dummy values
@@ -174,7 +175,7 @@ class Network(object):
 
 
     def SGD(self, training_data, epochs, mini_batch_size, rate,
-            test_data=None, start_epoch=1):
+            test_data=None):
         """Train the neural network using mini-batch stochastic
         gradient descent.  The ``training_data`` is a list of tuples
         ``(x, y)`` representing the training inputs (a vector) and the desired
@@ -182,8 +183,15 @@ class Network(object):
         self-explanatory.  If ``test_data`` is provided then the
         network will be evaluated against the test data after each
         epoch, and partial progress printed out.  This is useful for
-        tracking progress, but slows things down substantially."""
-        if start_epoch == 1:
+        tracking progress, but slows things down substantially.
+        
+        Args:
+            epochs (int): epoch number to stop training at (given that we're starting at epoch self.epoch).
+        
+        """
+
+        #start_epoch = start_epoch if start_epoch != None else self.epoch # optional param start_epoch
+        if self.epoch == 0:
             self.save("initial.pkl")
 
         training_data = list(training_data)
@@ -205,7 +213,7 @@ class Network(object):
             cost, n_test, n_correct = getCost()
             print("INITIAL COST: {:.4f}\tcorrect: {:.2f}% -- {} / {}".format(cost, (n_correct/n_test)*100, n_correct, n_test))
 
-        for i in range(start_epoch, epochs+1):
+        for _ in range(epochs - self.epoch):
             self.epoch += 1
             sys.stdout.flush()
             random.shuffle(training_data)
@@ -220,16 +228,16 @@ class Network(object):
 
             if test_data:
                 cost, n_test, n_correct = getCost()
-                print("Epoch {}: COST: {:.4f}\tcorrect: {:.2f}% -- {} / {}".format(i, cost, (n_correct/n_test)*100, n_correct, n_test))
+                print("Epoch {}: COST: {:.4f}\tcorrect: {:.2f}% -- {} / {}".format(self.epoch, cost, (n_correct/n_test)*100, n_correct, n_test))
             else:
-                print("Epoch {} complete".format(i))
+                print("Epoch {} complete".format(self.epoch))
 
-            if i % 10 == 0:
+            if self.epoch % 10 == 0:
                 self.save("latest.pkl")
-            if i % 25 == 0:
-                self.save("epoch{}.pkl".format(i))
+            if self.epoch % 25 == 0:
+                self.save("epoch{}.pkl".format(self.epoch))
 
-        self.save("epoch{}.pkl".format(i))
+        self.save("epoch{}.pkl".format(self.epoch))
         self.save("latest.pkl")
         print("\ntraining complete (reached epoch {})".format(epochs))
 
@@ -237,6 +245,8 @@ class Network(object):
         """
         do backpropagation
         returns nabla_b, nabla_w (partial dertivatives of biases and weights wrt. cost function)
+
+        TODO: add support for computing dC/da for the activations ("inputs") of the input layer...
         """
         zs, activations = self.feedforward(x)
         # note: nabla_b is the same as the "error" calculated at each node
@@ -258,6 +268,7 @@ class Network(object):
             nabla_b[-l] = errors[-l] # BP3
             nabla_w[-l] = np.dot(errors[-l], activations[-l-1].transpose()) # BP4 (a matrix form)
         return (nabla_b, nabla_w)
+        #return (nabla_b, nabla_w, errors)
 
     def cost_derivative(self, output_activations, y):
         r"""

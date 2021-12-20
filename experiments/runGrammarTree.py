@@ -12,11 +12,53 @@ from mnist import mnist_loader
 
 
 def main():
-  training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
 
   # TODO: try with a softmax on all hidden layers, and the output layer (so each layer sums to 1.0)
-  net0 = network.Network([784, 100, 30, 10])
+  #part1()
+  part2()
 
+def part2():
+  training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
+  net0 = network.Network([784, 70, 40, 15, 10], name="net0", backupDir="backups/grammarTree")
+  net1 = network.Network([784, 55, 40, 21, 10], name="net1", backupDir="backups/grammarTree")
+
+  total_epochs = 5 # TODO for now
+  rate, mini_batch_size = 3.0, 10
+
+  net0.load('latest.pkl')
+  net1.load('latest.pkl')
+
+  # train initial network
+  print("training net0 for {} epochs".format(total_epochs))
+  net0.SGD(training_data, total_epochs, mini_batch_size, rate, test_data=test_data)
+  print("\n------done training net0-----")
+
+  print("training net1 for {} epochs".format(total_epochs))
+  net1.SGD(training_data, total_epochs, mini_batch_size, rate, test_data=test_data)
+  print("\n------done training net1-----")
+
+
+  # subnet0_1 of net0 (starting at layer 2):
+  #   (where this is now a network that takes input of size 40, and has output of size 10)
+  #tmpNet = network.Network([40, 15, 10], name="tmpNet")
+  #tmpNet.biases = net0.biases[3:]
+  #tmpNet.weights = net0.weights[3:]
+
+
+  # we add an extra layer from net1 for convenience for computing errors in the layer of size 40 with existing code...
+  tmpNet = network.Network([55, 40, 15, 10], name="tmpNet")
+  tmpNet.biases = net0.biases[2:]
+  tmpNet.weights = net0.weights[2:]
+
+  training_dataTmp = [(x, net1.feedforward(x)[1][1]) for (x, _) in list(training_data)]
+  test_dataTmp =     [(x, net1.feedforward(x)[1][1]) for (x, _) in list(test_data)]
+
+
+
+
+def part1():
+  training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
+  net0 = network.Network([784, 100, 30, 10])
   total_epochs = 1 # TODO for now
   rate, mini_batch_size = 3.0, 10
 
@@ -66,6 +108,11 @@ def main():
   # NOTE: better to report the total cost on the test_data set than just the number of results that had the same highest activation index...
   print("-----\nall done!------")
 
+  # next steps:
+  # come up with way to swap out grammer layers or something
+  #  to converge on a set of "standard" grammer layers for the networks.
+
+  # perhaps create some networks with extra layers hidden between the grammer layers as part of this process...
 
 
 
