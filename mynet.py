@@ -268,7 +268,6 @@ class Network(object):
             nabla_b[-l] = errors[-l] # BP3
             nabla_w[-l] = np.dot(errors[-l], activations[-l-1].transpose()) # BP4 (a matrix form)
         return (nabla_b, nabla_w)
-        #return (nabla_b, nabla_w, errors)
 
     def cost_derivative(self, output_activations, y):
         r"""

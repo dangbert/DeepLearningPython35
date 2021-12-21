@@ -1,5 +1,5 @@
 r"""
-mynetExperiment.py
+GroupsNet.py
 ~~~~~~~~~~
 
 inherits from mynet.py, but tests the possible allowing a layer l to be partitioned into g groups.

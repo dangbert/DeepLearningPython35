@@ -8,6 +8,8 @@ sys.path.append(PARENT_DIR)
 import mynet as network
 import numpy as np
 
+import GrammarNet
+
 from mnist import mnist_loader
 
 
@@ -25,8 +27,8 @@ def part2():
   total_epochs = 5 # TODO for now
   rate, mini_batch_size = 3.0, 10
 
-  net0.load('latest.pkl')
-  net1.load('latest.pkl')
+  net0.load('epoch5.pkl')
+  net1.load('epoch5.pkl')
 
   # train initial network
   print("training net0 for {} epochs".format(total_epochs))
@@ -37,6 +39,12 @@ def part2():
   net1.SGD(training_data, total_epochs, mini_batch_size, rate, test_data=test_data)
   print("\n------done training net1-----")
 
+  # convert to grammar nets
+  print('converting net0 and net1 to grammar nets...')
+  net0 = GrammarNet.Network([784, 70, 40, 15, 10], name="net0", backupDir="backups/grammarTree")
+  net1 = GrammarNet.Network([784, 55, 40, 21, 10], name="net1", backupDir="backups/grammarTree")
+  net0.load('epoch5.pkl')
+  net1.load('epoch5.pkl')
 
   # subnet0_1 of net0 (starting at layer 2):
   #   (where this is now a network that takes input of size 40, and has output of size 10)
@@ -47,12 +55,35 @@ def part2():
 
   # we add an extra layer from net1 for convenience for computing errors in the layer of size 40 with existing code...
   tmpNet = network.Network([55, 40, 15, 10], name="tmpNet")
-  tmpNet.biases = net0.biases[2:]
-  tmpNet.weights = net0.weights[2:]
+  tmpNet.biases = net0.biases[1:] # so start at 1 instead of 2 (for that extra layer)
+  tmpNet.weights = [net1.weights[1]] + net0.weights[2:] # borrow net1's weights for the first ("dummy") layer
 
-  training_dataTmp = [(x, net1.feedforward(x)[1][1]) for (x, _) in list(training_data)]
-  test_dataTmp =     [(x, net1.feedforward(x)[1][1]) for (x, _) in list(test_data)]
+  #training_dataTmp = [(x, net1.feedforward(x)[1][1]) for (x, _) in list(training_data)]
+  #test_dataTmp =     [(x, net1.feedforward(x)[1][1]) for (x, _) in list(test_data)]
 
+  print("special training of net1 ".format(total_epochs))
+  # "activate" net1 as a proper GrammarNet, then continue training it
+  net1.grammarLayer = 2
+  net1.otherNets = [tmpNet]
+
+  net1.SGD(training_data, total_epochs+25, mini_batch_size, rate, test_data=test_data)
+  print("all done!")
+
+  # now test to see if it will work (magically) in the opposite direction
+  #   (feeding output of grammar layer in net0, into the final subnet of net1)
+  #   (without any additional training)
+
+  #net0 = GrammarNet.Network([784, 70, 40, 15, 10], name="net0", backupDir="backups/grammarTree")
+  #net1 = GrammarNet.Network([784, 55, 40, 21, 10], name="net1", backupDir="backups/grammarTree")
+  tmpNet2 = GrammarNet.Network([784, 70, 40, 21, 10], name="tmpNet2", backupDir="backups/grammarTree")
+  tmpNet2.biases = net0.biases[:2] + net1.biases[2:]
+  tmpNet2.weights = net0.weights[:2] + net1.weights[2:]
+
+  # now evaluate this network on the test set (without training):
+
+  # also try training net0 and net1 (as grammar trees)
+  #   interleaving their epochs of training (and updating the respective tmp nets)
+  #   to see if they can converge together on a working "grammar layer"
 
 
 

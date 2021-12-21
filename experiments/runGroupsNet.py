@@ -52,7 +52,7 @@ def train():
         net.load("backups/epoch" + str(start_epoch) + ".pkl")
 
     # start training
-    net.SGD(training_data, total_epochs, mini_batch_size, rate, test_data=test_data, start_epoch=start_epoch)
+    net.SGD(training_data, total_epochs, mini_batch_size, rate, test_data=test_data)
 
 def test():
     # load dataset
