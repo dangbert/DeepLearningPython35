@@ -1,5 +1,6 @@
 # Grammar Tree Experiments:
 
+### Experiment Setup:
 ````python
 # created 2 nets and trained them each to ~94% perfomance on mnist (5 epochs)
 net0 = GrammarNet.Network([784, 70, 40, 15, 10], name="net0", backupDir="backups/grammarTree")
@@ -11,9 +12,9 @@ Then created a tmpNet with layers [55, 40, 15, 10] (formed by combining the two 
 
 Then trained net1, while modifying its cost function to simulate its grammar layers outputs being fed into the tmpNet (in reality feeding its outputs from layer 1).
 
-Results:
+### Results:
 
-The accuracy of net1 as it was trained immediately dropped to 18 percent and oscillated between there and ~10% over 25 epochs (tending towards ~10%)
+The accuracy of net1 as it was trained immediately dropped to 18 percent and oscillated between there and ~10% over 25 epochs (tending towards ~10%).  I repeated the experiment twice and had the same outcome...
 
 But this error at the start of training may have been an influence.
 

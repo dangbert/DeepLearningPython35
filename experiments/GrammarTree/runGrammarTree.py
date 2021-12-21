@@ -4,11 +4,12 @@ import os, sys
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 PARENT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(PARENT_DIR)
+sys.path.append(os.path.dirname(PARENT_DIR))
 
 import mynet as network
 import numpy as np
 
-import GrammarNet
+import experiments.GrammarTree.GrammarNet as GrammarNet
 
 from mnist import mnist_loader
 

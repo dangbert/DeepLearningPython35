@@ -5,6 +5,11 @@ GrammarNet.py
 inherits from mynet.py
 """
 
+import os, sys
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+PARENT_DIR = os.path.dirname(BASE_DIR)
+sys.path.append(PARENT_DIR)
+
 import mynet
 from datetime import datetime
 import sys
