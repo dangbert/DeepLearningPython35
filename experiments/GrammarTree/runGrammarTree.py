@@ -53,39 +53,79 @@ def part2():
   #tmpNet.biases = net0.biases[3:]
   #tmpNet.weights = net0.weights[3:]
 
+  def createTmpNet(n0, n1):
+    """
+    n1 -> n0
+    create new net by combining beginning of net n1 with end of n0)
 
-  # we add an extra layer from net1 for convenience for computing errors in the layer of size 40 with existing code...
-  tmpNet = network.Network([55, 40, 15, 10], name="tmpNet")
-  tmpNet.biases = net0.biases[1:] # so start at 1 instead of 2 (for that extra layer)
-  tmpNet.weights = [net1.weights[1]] + net0.weights[2:] # borrow net1's weights for the first ("dummy") layer
+    REMEMBER:
+    """
+    # we add an extra layer from net1 for convenience for computing errors in the layer of size 40 with existing code...
+    tmp = network.Network([55, 40, 15, 10], name="tmpNet")
+    #import pdb; pdb.set_trace();
+    tmp.biases = n0.biases[1:] # so start at 1 instead of 2 (for that extra layer)
+    tmp.weights = [n1.weights[1]] + n0.weights[2:] # borrow net1's weights for the first ("dummy") layer
+    #tmp.biases = n0.biases[1:] # so start at 1 instead of 2 (for that extra layer)
+    #tmp.weights = [n1.weights[1]] + n0.weights[2:] # borrow net1's weights for the first ("dummy") layer
+    return tmp
+
+  def createTmpNet1(n0, n1): # n1 -> n0
+    """
+    n0 -> n1
+    create new net by combining beginning of net n0 with end of n1)
+    """
+    # TODO: note this will have the same "name" as nets produced by createTmpNet()...
+    tmp = createTmpNet(n1, n0) 
+    return tmp
+    #tmp = network.Network([70, 40, 21, 10], name="tmpNet2", backupDir="backups/grammarTree")
+    #tmp.biases = [n0.biases[1]] + n1.biases[2:]
+    #tmp.weights = [n0.weights[1]] + n1.weights[2:]
+    #import pdb; pdb.set_trace();
+    #return tmp
+
+  tmp1 = createTmpNet(net0, net1)
+  x, y = test_data[0]
+  zsOrig, actsOrig = net1.feedforward(x)
+  assert(actsOrig[1].shape == (55, 1))
+  assert(tmp1.weights[0].shape == (40, 55))
+  zs1, acts1 = tmp1.feedforward(actsOrig[1])
+  assert(actsOrig[2].shape == acts1[1].shape)
+  print("net1  activations:"); print(actsOrig[2])
+  print("tmp1  activations:"); print(acts1[1])
+  assert(np.allclose(actsOrig[2], acts1[1]))   # TODO: get this to pass!
+  import pdb; pdb.set_trace();
+  exit(1)
+
 
   #training_dataTmp = [(x, net1.feedforward(x)[1][1]) for (x, _) in list(training_data)]
   #test_dataTmp =     [(x, net1.feedforward(x)[1][1]) for (x, _) in list(test_data)]
 
   print("special training of net1 ".format(total_epochs))
+  curEpoch, total_epochs = 5, 35
   # "activate" net1 as a proper GrammarNet, then continue training it
   net1.grammarLayer = 2
-  net1.otherNets = [tmpNet]
+  net0.grammarLayer = 2
+  for i in range(curEpoch+1, total_epochs+1):
+    print("\ntraining both nets on epoch {}".format(i))
+    net0.otherNets = [createTmpNet1(net0, net1)]
+    net0.SGD(training_data, i, mini_batch_size, rate, test_data=test_data)
 
-  net1.SGD(training_data, total_epochs+25, mini_batch_size, rate, test_data=test_data)
+    net1.otherNets = [createTmpNet(net0, net1)]
+    net1.SGD(training_data, i, mini_batch_size, rate, test_data=test_data)
+
+
   print("all done!")
+
+  # try training net0 and net1 (as grammar trees)
+  #   interleaving their epochs of training (and updating the respective tmp nets)
+  #   to see if they can converge together on a working "grammar layer"
+
 
   # now test to see if it will work (magically) in the opposite direction
   #   (feeding output of grammar layer in net0, into the final subnet of net1)
   #   (without any additional training)
 
-  #net0 = GrammarNet.Network([784, 70, 40, 15, 10], name="net0", backupDir="backups/grammarTree")
-  #net1 = GrammarNet.Network([784, 55, 40, 21, 10], name="net1", backupDir="backups/grammarTree")
-  tmpNet2 = GrammarNet.Network([784, 70, 40, 21, 10], name="tmpNet2", backupDir="backups/grammarTree")
-  tmpNet2.biases = net0.biases[:2] + net1.biases[2:]
-  tmpNet2.weights = net0.weights[:2] + net1.weights[2:]
-
   # now evaluate this network on the test set (without training):
-
-  # also try training net0 and net1 (as grammar trees)
-  #   interleaving their epochs of training (and updating the respective tmp nets)
-  #   to see if they can converge together on a working "grammar layer"
-
 
 
 def part1():

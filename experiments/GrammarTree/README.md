@@ -19,3 +19,15 @@ The accuracy of net1 as it was trained immediately dropped to 18 percent and osc
 But this error at the start of training may have been an influence.
 
 > /home/dan/.dan/projects/DeepLearningPython35/mynet.py:291: RuntimeWarning: overflow encountered in exp return 1.0 / (1.0 + np.exp(-z))   
+
+#### Analysis / Next steps:
+I believe my method of including the layer prior to the grammary layer is faulty.
+It doesn't (at present) forces the activations of the grammer layer (of 40 nodes) to be indentical in value (between the two networks where its used). 
+I tested and verified that this is indeed the/a problem.
+
+Because by doing this:
+````python
+tmp1 = network.Network([55, 40, 15, 10], name="tmpNet")
+tmp1.biases = n0.biases[1:]
+tmp1.weights = [n1.weights[1]] + n0.weights[2:]
+````
