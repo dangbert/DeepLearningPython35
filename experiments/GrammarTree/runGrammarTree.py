@@ -63,7 +63,7 @@ def part2():
     # we add an extra layer from net1 for convenience for computing errors in the layer of size 40 with existing code...
     tmp = network.Network([55, 40, 15, 10], name="tmpNet")
     #import pdb; pdb.set_trace();
-    tmp.biases = n0.biases[1:] # so start at 1 instead of 2 (for that extra layer)
+    tmp.biases = [n1.biases[1]] + n0.biases[2:] # so start at 1 instead of 2 (for that extra layer)
     tmp.weights = [n1.weights[1]] + n0.weights[2:] # borrow net1's weights for the first ("dummy") layer
     #tmp.biases = n0.biases[1:] # so start at 1 instead of 2 (for that extra layer)
     #tmp.weights = [n1.weights[1]] + n0.weights[2:] # borrow net1's weights for the first ("dummy") layer
@@ -83,25 +83,27 @@ def part2():
     #import pdb; pdb.set_trace();
     #return tmp
 
-  tmp1 = createTmpNet(net0, net1)
+  tmp = createTmpNet(net0, net1)
   x, y = test_data[0]
   zsOrig, actsOrig = net1.feedforward(x)
   assert(actsOrig[1].shape == (55, 1))
-  assert(tmp1.weights[0].shape == (40, 55))
+  assert(tmp.weights[0].shape == (40, 55))
+  zs1, acts1 = tmp.feedforward(actsOrig[1])
+  assert(actsOrig[2].shape == acts1[1].shape)
+  #print("net1  activations:"); print(actsOrig[2]); print("tmp  activations:"); print(acts1[1])
+  assert(np.allclose(actsOrig[2], acts1[1])) # verify that activations at the grammar layer are the same in both nets
+
+  tmp1 = createTmpNet1(net0, net1)
+  zsOrig, actsOrig = net0.feedforward(x)
+  assert(actsOrig[1].shape == (70, 1))
+  assert(tmp1.weights[0].shape == (40, 70))
   zs1, acts1 = tmp1.feedforward(actsOrig[1])
   assert(actsOrig[2].shape == acts1[1].shape)
-  print("net1  activations:"); print(actsOrig[2])
-  print("tmp1  activations:"); print(acts1[1])
-  assert(np.allclose(actsOrig[2], acts1[1]))   # TODO: get this to pass!
-  import pdb; pdb.set_trace();
-  exit(1)
+  assert(np.allclose(actsOrig[2], acts1[1])) # verify that activations at the grammar layer are the same in both nets
 
-
-  #training_dataTmp = [(x, net1.feedforward(x)[1][1]) for (x, _) in list(training_data)]
-  #test_dataTmp =     [(x, net1.feedforward(x)[1][1]) for (x, _) in list(test_data)]
 
   print("special training of net1 ".format(total_epochs))
-  curEpoch, total_epochs = 5, 35
+  curEpoch, total_epochs = 5, 125
   # "activate" net1 as a proper GrammarNet, then continue training it
   net1.grammarLayer = 2
   net0.grammarLayer = 2
@@ -121,11 +123,10 @@ def part2():
   #   to see if they can converge together on a working "grammar layer"
 
 
-  # now test to see if it will work (magically) in the opposite direction
+  # after training just net1, test to see if it will work (magically) in the opposite direction
   #   (feeding output of grammar layer in net0, into the final subnet of net1)
-  #   (without any additional training)
-
-  # now evaluate this network on the test set (without training):
+  #   evaluate this network on the test set (without training)
+  #   use: 'backups/grammarTree/net1/not-interleaved--epoch25.pkl'
 
 
 def part1():

@@ -14,20 +14,13 @@ Then trained net1, while modifying its cost function to simulate its grammar lay
 
 ### Results:
 
-The accuracy of net1 as it was trained immediately dropped to 18 percent and oscillated between there and ~10% over 25 epochs (tending towards ~10%).  I repeated the experiment twice and had the same outcome...
+The accuracy of net1 as it was trained immediately dropped to 18.6 after the first epoch of grammar training, and stayed relatively constant around 18-20% for the next 20 epochs.
 
-But this error at the start of training may have been an influence.
+Note that this error also came up in training:
 
 > /home/dan/.dan/projects/DeepLearningPython35/mynet.py:291: RuntimeWarning: overflow encountered in exp return 1.0 / (1.0 + np.exp(-z))   
 
-#### Analysis / Next steps:
-I believe my method of including the layer prior to the grammary layer is faulty.
-It doesn't (at present) forces the activations of the grammer layer (of 40 nodes) to be indentical in value (between the two networks where its used). 
-I tested and verified that this is indeed the/a problem.
 
-Because by doing this:
-````python
-tmp1 = network.Network([55, 40, 15, 10], name="tmpNet")
-tmp1.biases = n0.biases[1:]
-tmp1.weights = [n1.weights[1]] + n0.weights[2:]
-````
+Training net1 and net2 in alternating epochs, net0 was at about 9-11% performance, and net1 at 79-82% (after 28 epochs each).
+
+In a repeat of this experiment, both networks performed around 10% accuracy (after 25 epochs)...
