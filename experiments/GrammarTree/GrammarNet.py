@@ -110,19 +110,23 @@ class Network(mynet.Network):
         for x, y in miniBatch:
             # errorAdj starts as an array of zeros for every layer (omitting the input layer)
             errorAdj = [np.zeros((n, 1), dtype=float) for n in self.sizes[1:]]
-            # get activations of (LAYER PRIOR TO) this grammar layer
-            gInput = x if self.grammarLayer == -1 else self.feedforward(x)[1][self.grammarLayer - 1]
+            # get activations of grammar layer
+            gInput = x if self.grammarLayer == -1 else self.feedforward(x)[1][self.grammarLayer]
 
             for oNet in self.otherNets:
                 # nabla_b (errors) of layer 1 (should correspond to grammar layer)
-                res = oNet.backprop(gInput, y)[0][0] # index 0 b/c/ input layer is omitted from nablas
-                errorAdj[self.grammarLayer - 1] += res  # subtract 1 from index cause errorAdj omits the input layer
-            #print('errorAdj:')
-            #print(errorAdj)
+                #res = oNet.backprop(gInput, y, None) # must explicitly pass None so super().backprop() is not called instead...
+                _, _, nabla_a0 = oNet.backprop(gInput, y)
+                #import pdb; pdb.set_trace()
+                # compute blame relative to z0 (if inputs a0 = sigmoid(z0) for some z0)
+                nabla_z0 = np.multiply(self.sigmoid_prime(self.sigmoid_inverse(gInput)), nabla_a0) # (gInput is a0)
+
+                errorAdj[self.grammarLayer - 1] += nabla_z0  # subtract 1 from index cause errorAdj omits the input layer
+            #print('errorAdj:'); print(errorAdj)
 
             #print('flag1, x.shape = {}, y.shape = {}, len(errorAdj) = {}'.format(x.shape, y.shape, len(errorAdj)))
             #import pdb; pdb.set_trace()
-            delta_b, delta_w = self.backprop(x, y, errorAdj)
+            delta_b, delta_w, _ = self.backprop(x, y, errorAdj)
             nabla_b = [nb+db for nb, db in zip(nabla_b, delta_b)]
             nabla_w = [nw+dw for nw, dw in zip(nabla_w, delta_w)]
         self.biases = [b-(rate/len(miniBatch))*nb
@@ -133,8 +137,9 @@ class Network(mynet.Network):
     # TODO: pass net0 as a param here?
     def backprop(self, x, y, errorAdj):
         """
-        do backpropagation
-        returns nabla_b, nabla_w (partial dertivatives of biases and weights wrt. cost function)
+        does backpropagation and returns returns nabla_b, nabla_w, nabla_a0
+        (partial dertivatives of biases and weights wrt. cost function, 
+        nabla_a0 is dC/da for the activations ("inputs") of the input layer).
 
         Args:
             errorAdj (array of numpy vectors): optional, additional values to add to errors while computing it.
@@ -161,4 +166,9 @@ class Network(mynet.Network):
                 errors[-l] += np.multiply( np.dot(self.weights[-l+1].transpose(),errors[-l+1]),  self.sigmoid_prime(zs[-l]) )
             nabla_b[-l] = errors[-l] # BP3
             nabla_w[-l] = np.dot(errors[-l], activations[-l-1].transpose()) # BP4 (a matrix form)
-        return (nabla_b, nabla_w)
+
+        #a0 = np.dot(self.weights[-l+1].transpose(),errors[-l+1]),  self.sigmoid_prime(zs[-l]) )
+        # compute the change in cost relative to the inputs ("activations" of layer 0)
+        a0 = self.weights[0].transpose() @ errors[0] # @ is another way to do matrix multiplication (same as np.dot() in this case)
+
+        return (nabla_b, nabla_w, a0)

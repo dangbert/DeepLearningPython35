@@ -75,7 +75,7 @@ def test_backprop():
             refTotalSec += timer() - start
 
             start = timer()
-            mine_b, mine_w = mine.backprop(x, y)
+            mine_b, mine_w, _ = mine.backprop(x, y)
             myTotalSec += timer() - start
             # https://stackoverflow.com/a/30773738
             assert(all([np.allclose(nb, mb) for nb, mb in zip(nabla_b, mine_b)]))
@@ -123,6 +123,12 @@ def test_update_mini_batch():
     print("reference: update_mini_batch() cumulative time: {:.4f} sec".format(refTotalSec))
     print("mine:      update_mini_batch() cumulative time: {:.4f} sec\n\n".format(myTotalSec))
 
+def test_sigmoid_inverse():
+    mine = mynet.Network([2, 2])
+    for z in [0.38201, 5, 19.393939, -1.501]:
+        res = mine.sigmoid(z)
+        assert(np.isclose(z, mine.sigmoid_inverse(res)))
+
 def test_SGD(tmp_path):
     """
     test that SGD() behaves the same across the two implemenations
@@ -166,10 +172,14 @@ def test_save_load(tmp_path):
     print(tmp_path)
 
     net1.save('initial.pkl')
-    assert(os.path.exists(os.path.join(net1.backupDir, 'initial.pkl')))
+    saveDir = os.path.join(net1.backupDir, net1.name)
+    assert(os.path.exists(os.path.join(saveDir, 'initial.pkl')))
 
     net2 = mynet.Network([1, 2], backupDir=tmp_path, name=name)
     net2.load('initial.pkl')
+
+    assert(net1.backupDir == net2.backupDir)
+    assert(net1.name == net2.name)
 
     diff = DeepDiff(net1.__dict__, net2.__dict__)
     print('diff = ')

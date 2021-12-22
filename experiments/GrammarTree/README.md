@@ -7,20 +7,14 @@ net0 = GrammarNet.Network([784, 70, 40, 15, 10], name="net0", backupDir="backups
 net1 = GrammarNet.Network([784, 55, 40, 21, 10], name="net1", backupDir="backups/grammarTree")
 ````
 
-Then created a tmpNet with layers [55, 40, 15, 10] (formed by combining the two nets)
-  (layer 0 being just an extra dummy layer to help with computing errors in layer 1 using existing `backprop()` code).
+Then created a tmpNet by copying the net formed by the last 3 layers ([40, 15, 10]) of net0.
 
-Then trained net1, while modifying its cost function to simulate its grammar layers outputs being fed into the tmpNet (in reality feeding its outputs from layer 1).
+Then trained net1, with a modiified cost function to simulate its grammar layer (of size 40) outputs being fed into the tmpNet as well.
+So the blame values in its grammar layer were modified to add a component of blame for the performance of the layers activations being fed into the tmpNet as input.  The tmpNet was never modified during the training.
 
 ### Results:
 
-The accuracy of net1 as it was trained immediately dropped to 18.6 after the first epoch of grammar training, and stayed relatively constant around 18-20% for the next 20 epochs.
-
-Note that this error also came up in training:
-
-> /home/dan/.dan/projects/DeepLearningPython35/mynet.py:291: RuntimeWarning: overflow encountered in exp return 1.0 / (1.0 + np.exp(-z))   
+net1 was trained like this for 100 additional epochs. On the first additional epoch it had performace 94.12%, and reached ~96% accuracy after 35 total additional epochs.  After 105 total additional epochs it reached 96.45% percent.  The performance never dipped below 94% and was quite stable over time.
 
 
-Training net1 and net2 in alternating epochs, net0 was at about 9-11% performance, and net1 at 79-82% (after 28 epochs each).
-
-In a repeat of this experiment, both networks performed around 10% accuracy (after 25 epochs)...
+TODO: analyze performace now when the outputs of the grammer layer are fed into the tmpNet.

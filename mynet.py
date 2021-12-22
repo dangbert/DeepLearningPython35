@@ -69,7 +69,8 @@ class Network(object):
                         for i in range(self.num_layers-1)]
 
         self.name = name
-        self.backupDir = "{}/{}".format(backupDir, self.name)
+        self.backupDir = backupDir
+        #self.backupDir = "{}/{}".format(backupDir, self.name)
 
     def save(self, filename):
         """
@@ -79,10 +80,11 @@ class Network(object):
         Args:
             filename (str): name fo file to save (relative to self.backupDir)
         """
-        if not os.path.exists(self.backupDir):
-            os.makedirs(self.backupDir)
+        saveDir = os.path.join(self.backupDir, self.name)
+        if not os.path.exists(saveDir):
+            os.makedirs(saveDir)
 
-        filename = os.path.join(self.backupDir, filename)
+        filename = os.path.join(saveDir, filename)
         if os.path.exists(filename):
           os.remove(filename)
         with open(filename, 'wb') as f:
@@ -97,8 +99,9 @@ class Network(object):
             fname (str): name of pickle file to open.
                 This path is first tried relative to self.backupDir, then its tried by iteself as a fallback.
         """
+        saveDir = os.path.join(self.backupDir, self.name)
 
-        relName = os.path.join(self.backupDir, fname)
+        relName = os.path.join(saveDir, fname)
         fname = relName if os.path.exists(relName) else fname
         with open(fname, 'rb') as f:
             self.__dict__.update(pickle.load(f))
@@ -165,7 +168,7 @@ class Network(object):
         # average the delta_b, delta_w calculated for each training sample
         # and adjust the weights, biases using the learning rate
         for x, y in miniBatch:
-            delta_b, delta_w = self.backprop(x, y)
+            delta_b, delta_w, _ = self.backprop(x, y)
             nabla_b = [nb+db for nb, db in zip(nabla_b, delta_b)]
             nabla_w = [nw+dw for nw, dw in zip(nabla_w, delta_w)]
         self.biases = [b-(rate/len(miniBatch))*nb
@@ -243,10 +246,9 @@ class Network(object):
 
     def backprop(self, x, y):
         """
-        do backpropagation
-        returns nabla_b, nabla_w (partial dertivatives of biases and weights wrt. cost function)
-
-        TODO: add support for computing dC/da for the activations ("inputs") of the input layer...
+        does backpropagation and returns returns nabla_b, nabla_w, nabla_a0
+        (partial dertivatives of biases and weights wrt. cost function, 
+        nabla_a0 is dC/da for the activations ("inputs") of the input layer).
         """
         zs, activations = self.feedforward(x)
         # note: nabla_b is the same as the "error" calculated at each node
@@ -267,7 +269,9 @@ class Network(object):
                 errors[-l] = np.multiply( np.dot(self.weights[-l+1].transpose(),errors[-l+1]),  self.sigmoid_prime(zs[-l]) )
             nabla_b[-l] = errors[-l] # BP3
             nabla_w[-l] = np.dot(errors[-l], activations[-l-1].transpose()) # BP4 (a matrix form)
-        return (nabla_b, nabla_w)
+
+        nabla_a0 = self.weights[0].transpose() @ errors[0] # @ is another way to do matrix multiplication (same as np.dot() in this case)
+        return (nabla_b, nabla_w, nabla_a0)
 
     def cost_derivative(self, output_activations, y):
         r"""
@@ -289,6 +293,13 @@ class Network(object):
         https://en.wikipedia.org/wiki/Sigmoid_function
         """
         return 1.0 / (1.0 + np.exp(-z))
+
+    def sigmoid_inverse(self, z):
+        """
+        Implements the inverse of the sigmoid function.
+        https://en.wikipedia.org/wiki/Logit
+        """
+        return np.log(z / (1 - z))
 
     # derivative of sigmoid function
     #@staticmethod
