@@ -20,10 +20,12 @@ def main():
   #part1()
   part2()
 
+BACKUP_DIR = "backups/grammarTree"
+
 def part2():
   training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
-  net0 = network.Network([784, 70, 40, 15, 10], name="net0", backupDir="backups/grammarTree")
-  net1 = network.Network([784, 55, 40, 21, 10], name="net1", backupDir="backups/grammarTree")
+  net0 = network.Network([784, 70, 40, 15, 10], name="net0", backupDir=BACKUP_DIR)
+  net1 = network.Network([784, 55, 40, 21, 10], name="net1", backupDir=BACKUP_DIR)
 
   total_epochs = 5 # TODO for now
   rate, mini_batch_size = 3.0, 10
@@ -40,70 +42,95 @@ def part2():
   net1.SGD(training_data, total_epochs, mini_batch_size, rate, test_data=test_data)
   print("\n------done training net1-----")
 
+  def createTmpNet(n0, gL=2, name=None):
+    """
+    Create a new network defined by the subnet starting at the grammar layer in net n0, and continuing to the end.
+
+    Args:
+      gl (int): index of layer in net n0 to act as the "grammarLayer"
+      name (str): name for the new network
+    """
+    tmp = network.Network(n0.sizes[gL:], name=name)
+    tmp.biases = n0.biases[gL:]
+    tmp.weights = n0.weights[gL:]
+    return tmp
+
   # convert to grammar nets
   print('converting net0 and net1 to grammar nets...')
-  net0 = GrammarNet.Network([784, 70, 40, 15, 10], name="net0", backupDir="backups/grammarTree")
-  net1 = GrammarNet.Network([784, 55, 40, 21, 10], name="net1", backupDir="backups/grammarTree")
+  net0 = GrammarNet.Network([784, 70, 40, 15, 10], name="net0", backupDir=BACKUP_DIR)
+  net1 = GrammarNet.Network([784, 55, 40, 21, 10], name="net1", backupDir=BACKUP_DIR)
   net0.load('epoch5.pkl')
   net1.load('epoch5.pkl')
-
-  # subnet0_1 of net0 (starting at layer 2):
-  #   (where this is now a network that takes input of size 40, and has output of size 10)
-  #tmpNet = network.Network([40, 15, 10], name="tmpNet")
-  #tmpNet.biases = net0.biases[3:]
-  #tmpNet.weights = net0.weights[3:]
-
-  def createTmpNet(n0):
-    """
-    create a new network defined by the subnet starting at the grammar layer in n0, and continuing to the end.
-    TODO: take grammerLayer (int) as a param e.g. 2 in this case
-    """
-    # we add an extra layer from net1 for convenience for computing errors in the layer of size 40 with existing code...
-    tmp = network.Network([40, 15, 10], name="tmpNet")
-    tmp.biases = n0.biases[2:]
-    tmp.weights = n0.weights[2:]
-    #tmp.biases = n0.biases[1:] # so start at 1 instead of 2 (for that extra layer)
-    #tmp.weights = [n1.weights[1]] + n0.weights[2:] # borrow net1's weights for the first ("dummy") layer
-    return tmp
+  net0.name, net1.name = 'gnet0', 'gnet1'
+  net0.load('epoch225.pkl')
 
   # if we feed the activations from the grammary layer in net0 into the subnet tmp
   #   we should get the same output from both networks
   x, _ = test_data[0]
-  tmp = createTmpNet(net0)
+  tmp0 = createTmpNet(net0, name='tmp0')
   _, actsOrig = net0.feedforward(x)
-  assert(np.allclose(actsOrig[-1], tmp.feedforward(actsOrig[2])[1][-1]))
+  assert(np.allclose(actsOrig[-1], tmp0.feedforward(actsOrig[2])[1][-1]))
   # test again using a different network
-  tmp1 = createTmpNet(net1)
+  tmp1 = createTmpNet(net1, name='tmp1')
   _, actsOrig = net1.feedforward(x)
   assert(np.allclose(actsOrig[-1], tmp1.feedforward(actsOrig[2])[1][-1]))
 
-  print("special training of net1 ".format(total_epochs))
-  curEpoch, total_epochs = 5, 105
+
+  #net0.load('backups/grammarTree/net0_experiment0/epoch95.pkl')
+  def evaluate(n0, tmp, test_data):
+    print('\nfeeding grammer layer from "{}" as inputs into "{}"...'.format(n0.name, tmp.name))
+    print('respective net sizes are: {}, and  {}'.format(n0.sizes, tmp.sizes))
+    xs = [n0.feedforward(x)[1][2] for x, _ in test_data]
+    ys = [y for x, y in test_data]
+    data = [(x, y) for (x, y) in zip(xs, ys)]
+    #import pdb; pdb.set_trace()
+    correct = tmp.test(data)
+    print('correct = {} / {} = {:.2f}%\n'.format(correct, len(data), 100 * correct / len(data)))
+
+  def evaluate2(n0, n1, test_data, gl=2):
+    """
+    also evaluate going the opposite direction
+    feeding output of grammer layer in net n1 into the final subnetwork of n0
+    """
+    tmp0 = createTmpNet(n0, name="tmp-{}".format(n0.name))
+
+    evaluate(n1, tmp0, test_data)
+
+
+  print("grammar training of net0".format(total_epochs))
+  curEpoch, total_epochs = net0.epoch, 3000
   # "activate" net1 as a proper GrammarNet, then continue training it
   net1.grammarLayer = 2
   net0.grammarLayer = 2
-  for i in range(curEpoch+1, total_epochs+1):
-    print("\ntraining both nets on epoch {}".format(i))
+  net0.otherNets = [tmp1]
+  net1.otherNets = [tmp0]
+  for i in range(curEpoch+1, total_epochs+1, 10):
+    evaluate(net0, tmp1, test_data)
+    evaluate2(net0, net1, test_data, gl=2)
+    #print("\ntraining both nets on epoch {}".format(i))
     # TODO: show total of (modified) cost function during training
     #   (C = C_net0 + C_tmp)
-    net0.otherNets = [createTmpNet(net1)]
     net0.SGD(training_data, i, mini_batch_size, rate, test_data=test_data)
+
 
     #net1.otherNets = [createTmpNet(net0)]
     #net1.SGD(training_data, i, mini_batch_size, rate, test_data=test_data)
 
+  evaluate(net0, tmp1, test_data)
+  # after training just net0, test to see if it will work (magically) in the opposite direction:
+  #   (feeding output of grammar layer in net0, into the final subnet of net1):
+  evaluate2(net0, net1, test_data, gl=2)
+
 
   print("all done!")
 
-  # try training net0 and net1 (as grammar trees)
+  # TODO: next steps:
+  # [ ]  matplotlib to track perforamce overtime
+  # [ ] try training net0 and net1 (as grammar trees)
   #   interleaving their epochs of training (and updating the respective tmp nets)
   #   to see if they can converge together on a working "grammar layer"
 
 
-  # after training just net1, test to see if it will work (magically) in the opposite direction
-  #   (feeding output of grammar layer in net0, into the final subnet of net1)
-  #   evaluate this network on the test set (without training)
-  #   use: 'backups/grammarTree/net1/not-interleaved--epoch25.pkl'
 
 
 def part1():
