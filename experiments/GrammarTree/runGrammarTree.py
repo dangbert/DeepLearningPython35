@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
 import os, sys
+import matplotlib.pyplot as plt
+import pickle
+
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 PARENT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(PARENT_DIR)
@@ -21,6 +24,7 @@ def main():
   part2()
 
 BACKUP_DIR = "backups/grammarTree"
+STATS_PATH = "{}/stats".format(BACKUP_DIR)
 
 def part2():
   training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
@@ -62,7 +66,7 @@ def part2():
   net0.load('epoch5.pkl')
   net1.load('epoch5.pkl')
   net0.name, net1.name = 'gnet0', 'gnet1'
-  net0.load('epoch225.pkl')
+  net0.load('latest.pkl')
 
   # if we feed the activations from the grammary layer in net0 into the subnet tmp
   #   we should get the same output from both networks
@@ -86,6 +90,7 @@ def part2():
     #import pdb; pdb.set_trace()
     correct = tmp.test(data)
     print('correct = {} / {} = {:.2f}%\n'.format(correct, len(data), 100 * correct / len(data)))
+    return 100 * correct / len(data)
 
   def evaluate2(n0, n1, test_data, gl=2):
     """
@@ -93,8 +98,8 @@ def part2():
     feeding output of grammer layer in net n1 into the final subnetwork of n0
     """
     tmp0 = createTmpNet(n0, name="tmp-{}".format(n0.name))
+    return evaluate(n1, tmp0, test_data)
 
-    evaluate(n1, tmp0, test_data)
 
 
   print("grammar training of net0".format(total_epochs))
@@ -104,22 +109,34 @@ def part2():
   net0.grammarLayer = 2
   net0.otherNets = [tmp1]
   net1.otherNets = [tmp0]
-  for i in range(curEpoch+1, total_epochs+1, 10):
-    evaluate(net0, tmp1, test_data)
-    evaluate2(net0, net1, test_data, gl=2)
+
+  stats = {
+    'epochs': [],
+    'net0': [],
+    'tmp1': [],
+    'tmp0': [],
+  }
+  with open(STATS_PATH + '.pkl', 'rb') as f:
+    stats = pickle.load(f)
+
+
+  for i in range(curEpoch+1, total_epochs+1, 5):
     #print("\ntraining both nets on epoch {}".format(i))
     # TODO: show total of (modified) cost function during training
     #   (C = C_net0 + C_tmp)
     net0.SGD(training_data, i, mini_batch_size, rate, test_data=test_data)
 
+    stats['epochs'].append(net0.epoch)
+    stats['net0'].append(100 * net0.test(test_data) / len(test_data))
+    stats['tmp1'].append(evaluate(net0, tmp1, test_data))
+    stats['tmp0'].append(evaluate2(net0, net1, test_data, gl=2))
+    plotStats(stats)
 
     #net1.otherNets = [createTmpNet(net0)]
     #net1.SGD(training_data, i, mini_batch_size, rate, test_data=test_data)
 
-  evaluate(net0, tmp1, test_data)
   # after training just net0, test to see if it will work (magically) in the opposite direction:
   #   (feeding output of grammar layer in net0, into the final subnet of net1):
-  evaluate2(net0, net1, test_data, gl=2)
 
 
   print("all done!")
@@ -129,8 +146,29 @@ def part2():
   # [ ] try training net0 and net1 (as grammar trees)
   #   interleaving their epochs of training (and updating the respective tmp nets)
   #   to see if they can converge together on a working "grammar layer"
+  # [ ] optimize interleaved training, when computing additional blame we my as well as update the weights in the tmp network...
+  # [ ] generalize code for traning a pool of 3+ networks with a shared grammar layer...
+  # [ ] test having subnetworks generated from the pool and voting on the final outpout
 
 
+def plotStats(stats, show=False, statsPath=STATS_PATH):
+  """
+  plot stats of the format:
+    { 'epochs': [], 'net0': [], 'tmp1': [], 'tmp0': [] }
+
+  TODO: create a class for tracking, storing generalized training stats...
+  """
+  plt.clf()
+  for key in stats.keys():
+    if key == 'epochs':
+      continue
+    plt.plot(stats['epochs'], stats[key], label=key)
+  plt.legend()
+  if show:
+    plt.show()
+  plt.savefig("{}.png".format(statsPath), dpi=200)
+  with open("{}.pkl".format(statsPath), 'wb') as f:
+    pickle.dump(stats, f, 2)
 
 
 def part1():
