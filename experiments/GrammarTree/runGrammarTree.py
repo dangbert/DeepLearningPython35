@@ -30,117 +30,84 @@ def part2():
   training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
   net0 = network.Network([784, 70, 40, 15, 10], name="net0", backupDir=BACKUP_DIR)
   net1 = network.Network([784, 55, 40, 21, 10], name="net1", backupDir=BACKUP_DIR)
+  GL = 2 # grammar layer index
 
-  total_epochs = 5 # TODO for now
+  total_epochs = 5
   rate, mini_batch_size = 3.0, 10
 
-  net0.load('epoch5.pkl')
-  net1.load('epoch5.pkl')
-
-  # train initial network
+  """
+  # train initial networks
   print("training net0 for {} epochs".format(total_epochs))
   net0.SGD(training_data, total_epochs, mini_batch_size, rate, test_data=test_data)
   print("\n------done training net0-----")
-
   print("training net1 for {} epochs".format(total_epochs))
   net1.SGD(training_data, total_epochs, mini_batch_size, rate, test_data=test_data)
   print("\n------done training net1-----")
-
-  def createTmpNet(n0, gL=2, name=None):
-    """
-    Create a new network defined by the subnet starting at the grammar layer in net n0, and continuing to the end.
-
-    Args:
-      gl (int): index of layer in net n0 to act as the "grammarLayer"
-      name (str): name for the new network
-    """
-    tmp = network.Network(n0.sizes[gL:], name=name)
-    tmp.biases = n0.biases[gL:]
-    tmp.weights = n0.weights[gL:]
-    return tmp
+  """
 
   # convert to grammar nets
   print('converting net0 and net1 to grammar nets...')
   net0 = GrammarNet.Network([784, 70, 40, 15, 10], name="net0", backupDir=BACKUP_DIR)
   net1 = GrammarNet.Network([784, 55, 40, 21, 10], name="net1", backupDir=BACKUP_DIR)
-  net0.load('epoch5.pkl')
-  net1.load('epoch5.pkl')
-  net0.name, net1.name = 'gnet0', 'gnet1'
-  net0.load('latest.pkl')
+  #net0.load('epoch5.pkl')
+  #net1.load('epoch5.pkl')
+  #net0.load('latest.pkl')
+  net0.backupDir, net1.backupDir = BACKUP_DIR, BACKUP_DIR # in case its different in the pkl file
 
   # if we feed the activations from the grammary layer in net0 into the subnet tmp
   #   we should get the same output from both networks
   x, _ = test_data[0]
-  tmp0 = createTmpNet(net0, name='tmp0')
+  tmp0 = createTmpNet(net0, GL, name='tmp0')
   _, actsOrig = net0.feedforward(x)
   assert(np.allclose(actsOrig[-1], tmp0.feedforward(actsOrig[2])[1][-1]))
   # test again using a different network
-  tmp1 = createTmpNet(net1, name='tmp1')
+  tmp1 = createTmpNet(net1, GL, name='tmp1')
   _, actsOrig = net1.feedforward(x)
   assert(np.allclose(actsOrig[-1], tmp1.feedforward(actsOrig[2])[1][-1]))
 
-
-  #net0.load('backups/grammarTree/net0_experiment0/epoch95.pkl')
-  def evaluate(n0, tmp, test_data):
-    print('\nfeeding grammer layer from "{}" as inputs into "{}"...'.format(n0.name, tmp.name))
-    print('respective net sizes are: {}, and  {}'.format(n0.sizes, tmp.sizes))
-    xs = [n0.feedforward(x)[1][2] for x, _ in test_data]
-    ys = [y for x, y in test_data]
-    data = [(x, y) for (x, y) in zip(xs, ys)]
-    #import pdb; pdb.set_trace()
-    correct = tmp.test(data)
-    print('correct = {} / {} = {:.2f}%\n'.format(correct, len(data), 100 * correct / len(data)))
-    return 100 * correct / len(data)
-
-  def evaluate2(n0, n1, test_data, gl=2):
-    """
-    also evaluate going the opposite direction
-    feeding output of grammer layer in net n1 into the final subnetwork of n0
-    """
-    tmp0 = createTmpNet(n0, name="tmp-{}".format(n0.name))
-    return evaluate(n1, tmp0, test_data)
-
-
-
   print("grammar training of net0".format(total_epochs))
-  curEpoch, total_epochs = net0.epoch, 3000
+  curEpoch, total_epochs = net0.epoch, 1000
   # "activate" net1 as a proper GrammarNet, then continue training it
-  net1.grammarLayer = 2
-  net0.grammarLayer = 2
-  net0.otherNets = [tmp1]
-  net1.otherNets = [tmp0]
 
-  stats = {
-    'epochs': [],
-    'net0': [],
-    'tmp1': [],
-    'tmp0': [],
-  }
-  with open(STATS_PATH + '.pkl', 'rb') as f:
-    stats = pickle.load(f)
+  net1.grammarLayer, net0.grammerLayer = GL, GL
+  net1.otherNets = GL, [tmp0]
+  net0.grammarLayer, net0.otherNets = GL, [tmp1]
 
+  stats = { 'epochs': [], 'net0': [], 'tmp1': [], 'tmp0': [] }
+  if os.path.exists(STATS_PATH + '.pkl'):
+    with open(STATS_PATH + '.pkl', 'rb') as f:
+      stats = pickle.load(f)
+      print('loaded existing stats from file')
 
-  plotStats(stats, xlabel="Epoch", ylabel="Accuracy (test set) %", title="Experiment2")
-  for i in range(curEpoch+1, total_epochs+1, 5):
-    #print("\ntraining both nets on epoch {}".format(i))
+  def updateStats(n0, n1, gl, stats, test_data):
+    stats['epochs'].append(n0.epoch)
+    stats['net0'].append(100 * n0.test(test_data) / len(test_data))
+    t0, t1 = createTmpNet(n0, gl), createTmpNet(n1, gl)
+    stats['tmp1'].append(evaluate(n0, t1, test_data, gl=GL))
+    # also evaluate going the opposite direction (feeding output of grammer layer in net n1 into the final subnetwork of n0
+    stats['tmp0'].append(evaluate(n1, t0, test_data, gl=GL))
+
+  updateStats(net0, net1, GL, stats, test_data)
+  plotStats(stats, xlabel="Epoch", ylabel="Accuracy (test set) %", title="Experiment2b")
+  for i in range(curEpoch+1, total_epochs+1, 3):
     # TODO: show total of (modified) cost function during training
-    #   (C = C_net0 + C_tmp)
+    #   (C = C_net0 + C_tmp1)
+
+    tmp1 = createTmpNet(net1, GL)
+    net0.otherNets = [tmp1]
     net0.SGD(training_data, i, mini_batch_size, rate, test_data=test_data)
 
-    stats['epochs'].append(net0.epoch)
-    stats['net0'].append(100 * net0.test(test_data) / len(test_data))
-    stats['tmp1'].append(evaluate(net0, tmp1, test_data))
-    stats['tmp0'].append(evaluate2(net0, net1, test_data, gl=2))
-    plotStats(stats, xlabel="Epoch", ylabel="Accuracy (test set) %", title="Experiment2")
+    tmp0 = createTmpNet(net0, GL)
+    net1.otherNets = [tmp0]
+    net1.SGD(training_data, i, mini_batch_size, rate, test_data=test_data)
 
-    #net1.otherNets = [createTmpNet(net0)]
-    #net1.SGD(training_data, i, mini_batch_size, rate, test_data=test_data)
+    updateStats(net0, net1, GL, stats, test_data)
+    plotStats(stats, xlabel="Epoch", ylabel="Accuracy (test set) %", title="Experiment2b")
+  print("all done!")
+
 
   # after training just net0, test to see if it will work (magically) in the opposite direction:
   #   (feeding output of grammar layer in net0, into the final subnet of net1):
-
-
-  print("all done!")
 
   # TODO: next steps:
   # [ ] try training net0 and net1 (as grammar trees) interleaving their epochs of training
@@ -150,6 +117,35 @@ def part2():
   # [ ] generalize code for training a pool of 3+ networks with a shared grammar layer...
   # [ ] test having subnetworks generated from the pool and voting on the final outpout
 
+def createTmpNet(n0, gL, name=None):
+  """
+  Create a new network defined by the subnet starting at the grammar layer in net n0, and continuing to the end.
+
+  Args:
+    gl (int): index of layer in net n0 to act as the "grammarLayer"
+    name (str): name for the new network
+  """
+  name = 'tmp-' + n0.name if name == None else name
+  tmp = network.Network(n0.sizes[gL:], name=name)
+  tmp.biases = n0.biases[gL:]
+  tmp.weights = n0.weights[gL:]
+  return tmp
+
+def evaluate(n0, tmp, test_data, gl=2):
+  """
+  feed outputs of grammar layer gl in net n0 as input into network tmp and evaluate its performance on test_data
+  Args:
+    gl (int): index of Grammary layer in net n0
+  """
+  print('\nfeeding grammer layer from "{}" as inputs into "{}"...'.format(n0.name, tmp.name))
+  print('respective net sizes are: {}, and  {}'.format(n0.sizes, tmp.sizes))
+  xs = [n0.feedforward(x)[1][gl] for x, _ in test_data]
+  ys = [y for x, y in test_data]
+  data = [(x, y) for (x, y) in zip(xs, ys)]
+  #import pdb; pdb.set_trace()
+  correct = tmp.test(data)
+  print('correct = {} / {} = {:.2f}%\n'.format(correct, len(data), 100 * correct / len(data)))
+  return 100 * correct / len(data)
 
 def plotStats(stats, show=False, statsPath=STATS_PATH, xlabel="", ylabel="", title=""):
   """
@@ -168,7 +164,6 @@ def plotStats(stats, show=False, statsPath=STATS_PATH, xlabel="", ylabel="", tit
   plt.xlabel(xlabel)
   plt.ylabel(ylabel)
   plt.title(title)
-
   if show:
     plt.show()
   plt.savefig("{}.png".format(statsPath), dpi=400)

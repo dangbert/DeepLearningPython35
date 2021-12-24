@@ -27,7 +27,7 @@ This tests if the grammar layer works well in the opposite direction, even thoug
 #### Data:
 See `experiment2_stats.png` and `experiment2_stats.pkl`
 
-<img src="./archive/experiment2_stats.png?raw=true" alt="main view" width="550">
+<img src="./archive/experiment2/experiment2_stats.png?raw=true" alt="main view" width="550">
 
 
 
@@ -45,3 +45,9 @@ Note: I wasn't tracking all metrics from the beginning, so see below the metrics
 | 98     | 86.9%   | 96.3% | 23.7% |
 | 153    | 86.3%   | 96.4% | 31.9% |
 | 221    | 86.7%   | 96.5% | 33.7% |
+
+
+## Experiment2b
+Exact same as experiment 2, except interleaved training net0 and net1 from scratch, (using the final half of the opposite network as a tmp net for training).  (tmp1 is the final half of net1, and tmp0 is the final half of net0).
+
+<img src="./archive/experiment2b/stats.png?raw=true" alt="main view" width="550">
