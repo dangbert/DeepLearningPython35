@@ -79,7 +79,7 @@ class Network(mynet.Network):
             if self.epoch % 10 == 0:
                 self.save("latest.pkl")
             if self.epoch % 25 == 0:
-                self.save("epoch{}.pkl".format(self.epoch))
+                self.save("epoch{}.pkl".format(str(self.epoch).rjust(4, '0'))) # 0 pad epoch
 
         self.save("epoch{}.pkl".format(self.epoch))
         self.save("latest.pkl")

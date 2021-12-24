@@ -78,7 +78,7 @@ class Network(object):
         https://stackoverflow.com/a/2842727
 
         Args:
-            filename (str): name fo file to save (relative to self.backupDir)
+            filename (str): name fo file to save (relative to `self.backupDir/self.name`)
         """
         saveDir = os.path.join(self.backupDir, self.name)
         if not os.path.exists(saveDir):
@@ -238,7 +238,7 @@ class Network(object):
             if self.epoch % 10 == 0:
                 self.save("latest.pkl")
             if self.epoch % 25 == 0:
-                self.save("epoch{}.pkl".format(self.epoch))
+                self.save("epoch{}.pkl".format(str(self.epoch).rjust(4, '0'))) # 0 pad epoch
 
         self.save("epoch{}.pkl".format(self.epoch))
         self.save("latest.pkl")

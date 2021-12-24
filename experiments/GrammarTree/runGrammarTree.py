@@ -120,6 +120,7 @@ def part2():
     stats = pickle.load(f)
 
 
+  plotStats(stats, xlabel="Epoch", ylabel="Accuracy (test set) %", title="Experiment2")
   for i in range(curEpoch+1, total_epochs+1, 5):
     #print("\ntraining both nets on epoch {}".format(i))
     # TODO: show total of (modified) cost function during training
@@ -130,7 +131,7 @@ def part2():
     stats['net0'].append(100 * net0.test(test_data) / len(test_data))
     stats['tmp1'].append(evaluate(net0, tmp1, test_data))
     stats['tmp0'].append(evaluate2(net0, net1, test_data, gl=2))
-    plotStats(stats)
+    plotStats(stats, xlabel="Epoch", ylabel="Accuracy (test set) %", title="Experiment2")
 
     #net1.otherNets = [createTmpNet(net0)]
     #net1.SGD(training_data, i, mini_batch_size, rate, test_data=test_data)
@@ -142,16 +143,15 @@ def part2():
   print("all done!")
 
   # TODO: next steps:
-  # [ ]  matplotlib to track perforamce overtime
-  # [ ] try training net0 and net1 (as grammar trees)
-  #   interleaving their epochs of training (and updating the respective tmp nets)
-  #   to see if they can converge together on a working "grammar layer"
+  # [ ] try training net0 and net1 (as grammar trees) interleaving their epochs of training
+  #     (and updating the respective tmp nets)
+  #     to see if they can converge together on a working "grammar layer"
   # [ ] optimize interleaved training, when computing additional blame we my as well as update the weights in the tmp network...
-  # [ ] generalize code for traning a pool of 3+ networks with a shared grammar layer...
+  # [ ] generalize code for training a pool of 3+ networks with a shared grammar layer...
   # [ ] test having subnetworks generated from the pool and voting on the final outpout
 
 
-def plotStats(stats, show=False, statsPath=STATS_PATH):
+def plotStats(stats, show=False, statsPath=STATS_PATH, xlabel="", ylabel="", title=""):
   """
   plot stats of the format:
     { 'epochs': [], 'net0': [], 'tmp1': [], 'tmp0': [] }
@@ -163,10 +163,15 @@ def plotStats(stats, show=False, statsPath=STATS_PATH):
     if key == 'epochs':
       continue
     plt.plot(stats['epochs'], stats[key], label=key)
+
   plt.legend()
+  plt.xlabel(xlabel)
+  plt.ylabel(ylabel)
+  plt.title(title)
+
   if show:
     plt.show()
-  plt.savefig("{}.png".format(statsPath), dpi=200)
+  plt.savefig("{}.png".format(statsPath), dpi=400)
   with open("{}.pkl".format(statsPath), 'wb') as f:
     pickle.dump(stats, f, 2)
 

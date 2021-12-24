@@ -1,36 +1,47 @@
 # Grammar Tree Experiments:
 
-### Experiment Setup:
+## Experiment2:
+[link to code at time of experiment](https://github.com/dangbert/DeepLearningPython35/tree/c97c746c65880c004aa01b6c0ef235d1b5326cf9)
+
+### Setup:
 ````python
 # created 2 nets and trained them each to ~94% perfomance on mnist (5 epochs)
 net0 = GrammarNet.Network([784, 70, 40, 15, 10], name="net0", backupDir="backups/grammarTree")
 net1 = GrammarNet.Network([784, 55, 40, 21, 10], name="net1", backupDir="backups/grammarTree")
 ````
 
-Then created a tmpNet by copying the net formed by the last 3 layers ([40, 21, 10]) of net1.
+> Note: we define "grammar layer" here as they layer of size 40 (in either network).
 
-Then trained net0, with a modiified cost function to simulate its grammar layer (of size 40) outputs being fed into the tmpNet as well.
-So the blame values in its grammar layer were modified to add a component of blame for the performance of the layers activations being fed into the tmpNet as input.  The tmpNet was never modified during the training.
+Then created net tmp1 by copying the network formed by the last 3 layers ([40, 21, 10]) of net1.
+
+Then trained net0, with a modified cost function to simulate its grammar layer (of size 40) outputs being fed into tmp1 as well.
+So the blame values in its grammar layer were modified to add a component of blame for the performance of the layers activations being fed into tmp1 as input.  Note that tmp1 was never modified during the training.
 
 ### Results:
 
-net0 was trained like this for ?? additional epochs. On the first additional epoch it had performace 2%, and reached ~96% accuracy after 35 total additional epochs.  After 105 total additional epochs it reached 96.45% percent.  The performance never dipped below 94% and was quite stable over time.
+net0 was trained like this for 1090 additional epochs. 
+
+The performance of tmp0 was also tracked; where tmp0 was the subnet of net0 (from the grammer layer to the final layer), with the activations of net1's grammar layer fed into it for evaluation purposes.
+This tests if the grammar layer works well in the opposite direction, even though it wasn't trained that way (yet).  Meaning, are the activations of net1's grammar layer intelligible to net0's grammar layer?
+
+#### Data:
+See `experiment2_stats.png` and `experiment2_stats.pkl`
+
+<img src="./archive/experiment2_stats.png?raw=true" alt="main view" width="550">
 
 
-TODO: analyze performace now when the outputs of the grammer layer are fed into the tmpNet.
 
-tmp0 performance is the performance of grammar subnet of net0, when the outputs of net1 are fed into it. This tests if the grammar layer works well in the opposite direction, even though it wasn't trained that way (yet).
+Note: I wasn't tracking all metrics from the beginning, so see below the metrics I manually tracked at the start:
 
-
-epoch, tmp1 performace, net0 performance, tmp0 performace
-epoch5 (initial), 4.9%, 94.12%
-epoch6, 46.6%, 94.24%
-epoch 15, 65.8%, 96.2%, 
-epoch 21, 66.1%, 96.3%, 
-epoch 22, 77.4%, 96.3% (big jump), 
-epoch 24, 77.3%, 96.2%, 18.23%
-epoch 40, 87.0%, 96.5%, 15.3%
-epoch 50, 86.3%, 95.86%, 16.2%
-epoch 98, 86.9%, 96.3%, 23.7%
-epoch 153, 86.3%, 96.4%, 31.9%
-epoch 221, 86.7%, 96.5%, 33.7%
+| epoch  |  tmp1   |  net0 |  tmp0 |
+|--------|---------|-------|-------|
+| 6      |  46.6%  | 94.2% |       |
+| 15     | 65.8%   | 96.2% |       | 
+| 21     | 66.1%   | 96.3% |       |
+| 22     | 77.4%   | 96.3% |       |
+| 24     | 77.3%   | 96.2% | 18.2% |
+| 40     | 87.0%   | 96.5% | 15.3% |
+| 50     | 86.3%   | 95.9% | 16.2% |
+| 98     | 86.9%   | 96.3% | 23.7% |
+| 153    | 86.3%   | 96.4% | 31.9% |
+| 221    | 86.7%   | 96.5% | 33.7% |
