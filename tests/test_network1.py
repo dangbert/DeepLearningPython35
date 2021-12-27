@@ -181,6 +181,12 @@ def test_save_load(tmp_path):
     assert(net1.backupDir == net2.backupDir)
     assert(net1.name == net2.name)
 
+    d1 = net1.__dict__
+    d2 = net2.__dict__
+    # have to remove backupDir param for the diff to work as expected
+    #   (TODO: understand this better)
+    d1.pop('backupDir')
+    d2.pop('backupDir')
     diff = DeepDiff(net1.__dict__, net2.__dict__)
     print('diff = ')
     print(diff)

@@ -3,6 +3,7 @@
 import os, sys
 import matplotlib.pyplot as plt
 import pickle
+import copy
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 PARENT_DIR = os.path.dirname(BASE_DIR)
@@ -51,19 +52,28 @@ def part2():
   net1 = GrammarNet.Network([784, 55, 40, 21, 10], name="net1", backupDir=BACKUP_DIR)
   #net0.load('epoch5.pkl')
   #net1.load('epoch5.pkl')
-  #net0.load('latest.pkl')
-  net0.backupDir, net1.backupDir = BACKUP_DIR, BACKUP_DIR # in case its different in the pkl file
+  net0.load('latest.pkl')
+  net1.load('latest.pkl')
+  net0.backupDir, net1.backupDir = BACKUP_DIR, BACKUP_DIR # in case it's different in the pkl file
 
-  # if we feed the activations from the grammary layer in net0 into the subnet tmp
-  #   we should get the same output from both networks
-  x, _ = test_data[0]
-  tmp0 = createTmpNet(net0, GL, name='tmp0')
-  _, actsOrig = net0.feedforward(x)
-  assert(np.allclose(actsOrig[-1], tmp0.feedforward(actsOrig[2])[1][-1]))
-  # test again using a different network
-  tmp1 = createTmpNet(net1, GL, name='tmp1')
-  _, actsOrig = net1.feedforward(x)
-  assert(np.allclose(actsOrig[-1], tmp1.feedforward(actsOrig[2])[1][-1]))
+
+  net0A, net0B = splitNetwork(net0, GL)
+  net1A, net1B = splitNetwork(net1, GL)
+  pool = [
+    net0, # 0A, 0B
+    joinNetworks([net0A, net1B]),
+    net1, # 1A, 1B
+    joinNetworks([net1A, net0B]),
+  ]
+
+  for i in range(len(pool)):
+    n = pool[i]
+    print("pool[{}] performance: {:.2f}%".format(i, 100 * n.test(test_data) / len(test_data)))
+  res = evaluatePool(pool, test_data)
+  print("combined pool (usinve avg) performance:   {:.2f}%".format(res))
+  res = evaluatePool(pool, test_data, median=True)
+  print("combined pool (using median) performance: {:.2f}%".format(res))
+  exit(0)
 
   print("grammar training of net0".format(total_epochs))
   curEpoch, total_epochs = net0.epoch, 1000
@@ -83,9 +93,9 @@ def part2():
     stats['epochs'].append(n0.epoch)
     stats['net0'].append(100 * n0.test(test_data) / len(test_data))
     t0, t1 = createTmpNet(n0, gl), createTmpNet(n1, gl)
-    stats['tmp1'].append(evaluate(n0, t1, test_data, gl=GL))
+    stats['tmp1'].append(evaluate(n0, t1, test_data, GL))
     # also evaluate going the opposite direction (feeding output of grammer layer in net n1 into the final subnetwork of n0
-    stats['tmp0'].append(evaluate(n1, t0, test_data, gl=GL))
+    stats['tmp0'].append(evaluate(n1, t0, test_data, GL))
 
   updateStats(net0, net1, GL, stats, test_data)
   plotStats(stats, xlabel="Epoch", ylabel="Accuracy (test set) %", title="Experiment2b")
@@ -110,16 +120,29 @@ def part2():
   #   (feeding output of grammar layer in net0, into the final subnet of net1):
 
   # TODO: next steps:
-  # [ ] try training net0 and net1 (as grammar trees) interleaving their epochs of training
-  #     (and updating the respective tmp nets)
-  #     to see if they can converge together on a working "grammar layer"
   # [ ] optimize interleaved training, when computing additional blame we my as well as update the weights in the tmp network...
   # [ ] generalize code for training a pool of 3+ networks with a shared grammar layer...
-  # [ ] test having subnetworks generated from the pool and voting on the final outpout
+  # [X] test having subnetworks generated from the pool and voting on the final outpout
+
+def joinNetworks(nets):
+  """
+  Combines a provided list of networks.
+  The size of the output layer of a given network, must equal the size of the input layer of the next network in nets.
+
+  Args:
+    nets (array of Network objects): list of networks to be combined into one
+  """
+  final = copy.deepcopy(nets[0])
+  for n in nets[1:]:
+    final.sizes = final.sizes[:-1] + n.sizes
+    final.weights += copy.deepcopy(n.weights)
+    final.biases += copy.deepcopy(n.biases)
+  return final
 
 def createTmpNet(n0, gL, name=None):
   """
   Create a new network defined by the subnet starting at the grammar layer in net n0, and continuing to the end.
+  TODO: delete this after splitNetwork() works
 
   Args:
     gl (int): index of layer in net n0 to act as the "grammarLayer"
@@ -131,7 +154,49 @@ def createTmpNet(n0, gL, name=None):
   tmp.weights = n0.weights[gL:]
   return tmp
 
-def evaluate(n0, tmp, test_data, gl=2):
+def splitNetwork(net, splitLayer, name=None):
+  """
+  return two networks, formed by splitting the provided network into two (at the given layer).
+    the given layer will be both the output layer of the first network returned, and the input layer of the second.
+
+  Args:
+    net (:obj Network): Network to split into two
+    splitLayer (int): index of layer in net to split
+  """
+  name = 'tmp-' + net.name if name == None else name
+  netB = network.Network(net.sizes[splitLayer:], name=name)
+  netB.biases = copy.deepcopy(net.biases[splitLayer:])
+  netB.weights = copy.deepcopy(net.weights[splitLayer:])
+
+  netA = network.Network(net.sizes[:(splitLayer+1)], name=name)
+  netA.biases = copy.deepcopy(net.biases[:splitLayer])
+  netA.weights = copy.deepcopy(net.weights[:splitLayer])
+  return netA, netB
+
+def evaluatePool(nets, test_data, median=False):
+  """
+  evaluate a pool of networks by having them vote on the final output of the test_data.
+  returns the percent of the test_data for which the pool predicted the correct output.
+  """
+
+  # TOOD: experiment with combinig inferences as medians vs averages...
+  outputs = [[net.getOutput(x) for net in nets] for x, _ in test_data]
+  inferences = []
+  for data in outputs:
+    if median:
+      inferences.append(np.median(data, axis=0))
+    else:
+      # average all np arrays in data, and store the result array
+      inferences.append(np.average(data, axis=0))
+
+  # based on mynet.py:test()
+  ys = [y for _, y in test_data]
+  test_results = [(np.argmax(x), y)
+                  for (x, y) in zip(inferences, ys)]
+  correct = sum(int(x == y) for (x, y) in test_results)
+  return 100 * correct / len(test_data)
+
+def evaluate(n0, tmp, test_data, gl):
   """
   feed outputs of grammar layer gl in net n0 as input into network tmp and evaluate its performance on test_data
   Args:

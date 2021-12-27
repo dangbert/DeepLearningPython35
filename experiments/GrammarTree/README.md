@@ -1,5 +1,7 @@
 # Grammar Tree Experiments:
 
+Note: for all experiments, unless otherwise stated, the performance of a network on a given dataset is the percentage of dataset items for which the highest output activation of the network corresponded to the correct data label.
+
 ## Experiment2:
 [link to code at time of experiment](https://github.com/dangbert/DeepLearningPython35/tree/c97c746c65880c004aa01b6c0ef235d1b5326cf9)
 
@@ -48,6 +50,20 @@ Note: I wasn't tracking all metrics from the beginning, so see below the metrics
 
 
 ## Experiment2b
-Exact same as experiment 2, except interleaved training net0 and net1 from scratch, (using the final half of the opposite network as a tmp net for training).  (tmp1 is the final half of net1, and tmp0 is the final half of net0).
+[link to code at time of experiment](https://github.com/dangbert/DeepLearningPython35/tree/62b3fa7b3e75528013df2487dc9b05c3737b837f)
+
+Exact same as experiment2, except interleaved training net0 and net1 from scratch, (using the final half of the opposite network as a tmp net for training).  Where tmp1 is the second half of net1, and tmp0 is the second half of net0.
 
 <img src="./archive/experiment2b/stats.png?raw=true" alt="main view" width="550">
+
+The final trained networks (net0 and net1) can each be split into 2 subnets, forming net0A and net0B (from net0 split at the grammary layer), and net1A and net1B (from net1).
+
+4 unique, complete networks were formed from these subnetworks (2 of them being just net0 and net1 exactly).
+These 4 networks were then evaluated on each item in the test dataset and allowed to "vote" on the correct result.  Results are as follows:
+
+
+| net0        | net0A-net1B | net1        | net1A-net0B | pool vote   |
+|-------------|-------------|-------------|-------------|-------------|
+| 96.6%       |  96.4%      | 96.2%       | 95.8%       | 97.0%       |
+
+Note: the pool vote when averaging each networks output resulted specifically in a 97.03% performance, and 97.06% when taking the median of each networks output.
