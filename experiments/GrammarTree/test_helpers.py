@@ -51,7 +51,12 @@ def test_joinNetworks():
     np.testing.assert_array_equal(joined.biases[i], netB.biases[i-2])
 
   training_data = mnist_loader.load_data_wrapper()[0]
-  joined.getOutput(training_data[0][0]) # should not throw an error
+  x = training_data[0][0]
+  joined.getOutput(x) # should not throw an error
+
+  # newA should be equivalent to netA:
+  newA = splitNetwork(joined, 2)[0]
+  np.testing.assert_array_equal(netA.getOutput(x), newA.getOutput(x))
 
 def test_splitNetwork():
   data =  mnist_loader.load_data_wrapper()[0]

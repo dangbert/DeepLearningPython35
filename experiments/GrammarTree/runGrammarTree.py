@@ -47,81 +47,58 @@ def part2():
   """
 
   # convert to grammar nets
-  print('converting net0 and net1 to grammar nets...')
-  net0 = GrammarNet.Network([784, 70, 40, 15, 10], name="net0", backupDir=BACKUP_DIR)
-  net1 = GrammarNet.Network([784, 55, 40, 21, 10], name="net1", backupDir=BACKUP_DIR)
-  #net0.load('epoch5.pkl')
-  #net1.load('epoch5.pkl')
-  net0.load('latest.pkl')
-  net1.load('latest.pkl')
-  net0.backupDir, net1.backupDir = BACKUP_DIR, BACKUP_DIR # in case it's different in the pkl file
-
-
-  net0A, net0B = splitNetwork(net0, GL)
-  net1A, net1B = splitNetwork(net1, GL)
-  pool = [
-    net0, # 0A, 0B
-    joinNetworks([net0A, net1B]),
-    net1, # 1A, 1B
-    joinNetworks([net1A, net0B]),
+  print('creating mainPool of grammer nets')
+  mainPool = [
+    GrammarNet.Network([784, 70, 40, 15, 10], name="net0", backupDir=BACKUP_DIR),
+    GrammarNet.Network([784, 55, 40, 21, 10], name="net1", backupDir=BACKUP_DIR),
+    GrammarNet.Network([784, 100, 50, 40, 21, 10], name="net2", backupDir=BACKUP_DIR),
+    GrammarNet.Network([784, 55, 40, 30, 15, 10], name="net3", backupDir=BACKUP_DIR),
   ]
 
-  for i in range(len(pool)):
-    n = pool[i]
-    print("pool[{}] performance: {:.2f}%".format(i, 100 * n.test(test_data) / len(test_data)))
-  res = evaluatePool(pool, test_data)
-  print("combined pool (usinve avg) performance:   {:.2f}%".format(res))
-  res = evaluatePool(pool, test_data, median=True)
-  print("combined pool (using median) performance: {:.2f}%".format(res))
-  exit(0)
+  #net0.load('epoch5.pkl')
+  #net1.load('epoch5.pkl')
+  #net0.load('latest.pkl')
+  #net1.load('latest.pkl')
+  #net0.backupDir, net1.backupDir = BACKUP_DIR, BACKUP_DIR # in case it's different in the pkl file
 
-  print("grammar training of net0".format(total_epochs))
-  curEpoch, total_epochs = net0.epoch, 1000
-  # "activate" net1 as a proper GrammarNet, then continue training it
+  #net1.grammarLayer, net0.grammerLayer = GL, GL
+  #net1.otherNets = GL, [tmp0]
+  #net0.grammarLayer, net0.otherNets = GL, [tmp1]
 
-  net1.grammarLayer, net0.grammerLayer = GL, GL
-  net1.otherNets = GL, [tmp0]
-  net0.grammarLayer, net0.otherNets = GL, [tmp1]
+  stats = { 'epochs': [], 'pool vote': [] }
 
-  stats = { 'epochs': [], 'net0': [], 'tmp1': [], 'tmp0': [] }
+  for n in mainPool:
+    stats[n.name] = []
+
   if os.path.exists(STATS_PATH + '.pkl'):
     with open(STATS_PATH + '.pkl', 'rb') as f:
       stats = pickle.load(f)
       print('loaded existing stats from file')
 
-  def updateStats(n0, n1, gl, stats, test_data):
-    stats['epochs'].append(n0.epoch)
-    stats['net0'].append(100 * n0.test(test_data) / len(test_data))
-    t0, t1 = createTmpNet(n0, gl), createTmpNet(n1, gl)
-    stats['tmp1'].append(evaluate(n0, t1, test_data, GL))
-    # also evaluate going the opposite direction (feeding output of grammer layer in net n1 into the final subnetwork of n0
-    stats['tmp0'].append(evaluate(n1, t0, test_data, GL))
+  # "activate" net1 as a proper GrammarNet, then continue training it
+  for n in mainPool:
+    n.grammarLayer = n.sizes.index(40) # find by grammar layer size
 
-  updateStats(net0, net1, GL, stats, test_data)
-  plotStats(stats, xlabel="Epoch", ylabel="Accuracy (test set) %", title="Experiment2b")
-  for i in range(curEpoch+1, total_epochs+1, 3):
+  curEpoch, total_epochs = mainPool[0].epoch, 1000
+  updateStats(mainPool, stats, test_data)
+  plotStats(stats, xlabel="Epoch", ylabel="Accuracy (test set) %", title="Experiment2c")
+  print("grammar training of mainPool ({} total epochs)".format(total_epochs))
+  for e in range(curEpoch+1, total_epochs+1, 3):
     # TODO: show total of (modified) cost function during training
     #   (C = C_net0 + C_tmp1)
 
-    tmp1 = createTmpNet(net1, GL)
-    net0.otherNets = [tmp1]
-    net0.SGD(training_data, i, mini_batch_size, rate, test_data=test_data)
+    for i in range(len(mainPool)):
+      mainPool[i].otherNets = [splitNetwork(mainPool[k], mainPool[k].grammarLayer)[1] for k in range(len(mainPool)) if k != i]
+      mainPool[i].SGD(training_data, e, mini_batch_size, rate, test_data=test_data)
 
-    tmp0 = createTmpNet(net0, GL)
-    net1.otherNets = [tmp0]
-    net1.SGD(training_data, i, mini_batch_size, rate, test_data=test_data)
-
-    updateStats(net0, net1, GL, stats, test_data)
-    plotStats(stats, xlabel="Epoch", ylabel="Accuracy (test set) %", title="Experiment2b")
+    updateStats(mainPool, stats, test_data)
+    plotStats(stats, xlabel="Epoch", ylabel="Accuracy (test set) %", title="Experiment2c")
   print("all done!")
 
 
-  # after training just net0, test to see if it will work (magically) in the opposite direction:
-  #   (feeding output of grammar layer in net0, into the final subnet of net1):
-
   # TODO: next steps:
   # [ ] optimize interleaved training, when computing additional blame we my as well as update the weights in the tmp network...
-  # [ ] generalize code for training a pool of 3+ networks with a shared grammar layer...
+  # [X] generalize code for training a pool of 3+ networks with a shared grammar layer...
   # [X] test having subnetworks generated from the pool and voting on the final outpout
 
 def joinNetworks(nets):
@@ -138,21 +115,6 @@ def joinNetworks(nets):
     final.weights += copy.deepcopy(n.weights)
     final.biases += copy.deepcopy(n.biases)
   return final
-
-def createTmpNet(n0, gL, name=None):
-  """
-  Create a new network defined by the subnet starting at the grammar layer in net n0, and continuing to the end.
-  TODO: delete this after splitNetwork() works
-
-  Args:
-    gl (int): index of layer in net n0 to act as the "grammarLayer"
-    name (str): name for the new network
-  """
-  name = 'tmp-' + n0.name if name == None else name
-  tmp = network.Network(n0.sizes[gL:], name=name)
-  tmp.biases = n0.biases[gL:]
-  tmp.weights = n0.weights[gL:]
-  return tmp
 
 def splitNetwork(net, splitLayer, name=None):
   """
@@ -195,6 +157,31 @@ def evaluatePool(nets, test_data, median=False):
                   for (x, y) in zip(inferences, ys)]
   correct = sum(int(x == y) for (x, y) in test_results)
   return 100 * correct / len(test_data)
+
+def updateStats(mainPool, stats, test_data):
+  stats['epochs'].append(mainPool[0].epoch)
+  for n in mainPool:
+    stats[n.name].append(100 * n.test(test_data) / len(test_data))
+
+  # create a larger pool of networks from all combinations of mainPool (splitting each at its grammar layer)
+  half1 = []
+  half2 = []
+  for i in range(len(mainPool)):
+    h1, h2 = splitNetwork(mainPool[i], mainPool[i].grammarLayer)
+    half1.append(h1)
+    half2.append(h2)
+
+  votePool = []
+  for i in range(len(half1)):
+    for j in range(len(half2)):
+      votePool.append(joinNetworks([half1[i], half2[j]]))
+
+  for i in range(len(votePool)):
+    n = votePool[i]
+    print("votePool[{}] performance: {:.2f}%".format(i, 100 * n.test(test_data) / len(test_data)))
+  res = evaluatePool(votePool, test_data)
+  print("combined pool performance:   {:.2f}%".format(res))
+  stats['pool vote'].append(res)
 
 def evaluate(n0, tmp, test_data, gl):
   """

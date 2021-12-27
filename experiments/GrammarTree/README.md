@@ -67,3 +67,40 @@ These 4 networks were then evaluated on each item in the test dataset and allowe
 | 96.6%       |  96.4%      | 96.2%       | 95.8%       | 97.0%       |
 
 Note: the pool vote when averaging each networks output resulted specifically in a 97.03% performance, and 97.06% when taking the median of each networks output.
+
+## Experiment2c
+Interleaved 4 networks being trained from scratch.  Each trained to optimize its outputs across all 4 possible final segments to the network.
+
+````python
+mainPool = [
+  GrammarNet.Network([784, 70, 40, 15, 10], name="net0", backupDir=BACKUP_DIR),
+  GrammarNet.Network([784, 55, 40, 21, 10], name="net1", backupDir=BACKUP_DIR),
+  GrammarNet.Network([784, 100, 50, 40, 21, 10], name="net2", backupDir=BACKUP_DIR),
+  GrammarNet.Network([784, 55, 40, 30, 15, 10], name="net3", backupDir=BACKUP_DIR),
+]
+````
+
+A pool of 16 possible networks (all possible combinations of both halves of the mainPool) was evaluated as well (averaging their results as a vote).  This pool was termed the "votePool."
+
+<img src="./archive/experiment2c/stats.png?raw=true" alt="main view" width="550">
+
+````text
+training complete (reached epoch 70)
+votePool[0] performance: 96.27%
+votePool[1] performance: 96.28%
+votePool[2] performance: 95.88%
+votePool[3] performance: 96.21%
+votePool[4] performance: 96.04%
+votePool[5] performance: 96.26%
+votePool[6] performance: 95.64%
+votePool[7] performance: 95.65%
+votePool[8] performance: 85.27%
+votePool[9] performance: 85.42%
+votePool[10] performance: 86.05%
+votePool[11] performance: 85.15%
+votePool[12] performance: 95.87%
+votePool[13] performance: 95.89%
+votePool[14] performance: 95.61%
+votePool[15] performance: 95.88%
+combined pool performance:   97.11%
+````
