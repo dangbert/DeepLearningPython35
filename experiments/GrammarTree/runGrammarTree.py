@@ -201,7 +201,8 @@ def evaluate(n0, tmp, test_data, gl):
   print('correct = {} / {} = {:.2f}%\n'.format(correct, len(data), 100 * correct / len(data)))
   return 100 * correct / len(data)
 
-def plotStats(stats, show=False, statsPath=STATS_PATH, xlabel="", ylabel="", title=""):
+# TODO: move this to a common lib location
+def plotStats(stats, show=False, statsPath=STATS_PATH, xlabel="", ylabel="", title="", plotLines=True):
   """
   plot stats of the format:
     { 'epochs': [], 'net0': [], 'tmp1': [], 'tmp0': [] }
@@ -213,6 +214,7 @@ def plotStats(stats, show=False, statsPath=STATS_PATH, xlabel="", ylabel="", tit
     if key == 'epochs':
       continue
     plt.plot(stats['epochs'], stats[key], label=key)
+    #plt.plot(stats['epochs'], stats[key], label=key, linestyle=None)
 
   plt.legend()
   plt.xlabel(xlabel)
