@@ -5,6 +5,7 @@ import pickle
 import copy
 import matplotlib.pyplot as plt
 import numpy as np
+from time import sleep
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 PARENT_DIR = os.path.dirname(BASE_DIR)
@@ -39,13 +40,21 @@ def part1():
   #sizes[0] != FEEDBACK_DIM
   net0 = DNetwork.Network(sizes, name="net0", backupDir=BACKUP_DIR)
 
-  evaluateExNet(netControl)
-  evaluateExNet(net0)
+  evaluateNet(netControl)
+  evaluateNet(net0)
+
+  # now train both networks:
+  total_epochs = 2
+  rate, mini_batch_size = 3.0, 10
+  net0.SGD(training_data, total_epochs, mini_batch_size, rate, test_data=test_data)
+  netControl.SGD(training_data, total_epochs, mini_batch_size, rate, test_data=test_data)
+
+  print("\nDone training networks! evaluating...")
+  evaluateNet(netControl)
+  evaluateNet(net0)
 
 
-
-def evaluateExNet(net):
-  """evaluate an experimental (deep feeback) net"""
+def evaluateNet(net):
   training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
   #for (x,y) in training_data
 
