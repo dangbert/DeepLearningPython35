@@ -36,6 +36,12 @@ See `stats.pkl` in the `archive/experiment1` folder.  The stats/plot below captu
 
 <img src="./archive/experiment1/stats.png?raw=true" alt="main view" width="550">
 
+Performance of net0 (epoch200) with varying total iterations (during test stage):
+
+<img src="./archive/experiment1/stats_iterations.png?raw=true" alt="main view" width="550">
+(remember the network was trained to optimize its performance on iteration 2).
+
+
 #### Further Experiments/ideas:
 * Try doing a higher number of iterations (only 2 were used for this experiment)!!
 * Experiment with passing noise to augment the raw input on the first iteration.

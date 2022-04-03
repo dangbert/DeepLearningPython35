@@ -26,10 +26,8 @@ def main():
   # train networks
   #part1()
   # plot results (using backups from disk)
-  stats = getStats(200)
-  import pdb; pdb.set_trace()
-  statsPath = os.path.join(BASE_DIR, "archive/experiment1/stats")
-  plotStats(stats, show=True, statsPath=statsPath, xlabel="epochs", ylabel="% correct (test set)", title="experiment 1, deep net vs control")
+
+  plotPart1()
 
 
 def part1():
@@ -47,8 +45,8 @@ def part1():
   #sizes[0] != FEEDBACK_DIM
   net0 = DNetwork.Network(sizes, name="net0", backupDir=BACKUP_DIR)
 
-  evaluateNet(netControl)
-  evaluateNet(net0)
+  evaluateNet(netControl, print=True)
+  evaluateNet(net0, print=True)
 
   # now train both networks:
   # TODO: interleave training so it's more "parallel" (see runGramarTree.py)
@@ -58,10 +56,36 @@ def part1():
   netControl.SGD(training_data, total_epochs, mini_batch_size, rate, test_data=test_data)
 
   print("\nDone training networks! evaluating...")
-  evaluateNet(netControl)
-  evaluateNet(net0)
+  evaluateNet(netControl, print=True)
+  evaluateNet(net0, print=True)
+
+
+def plotPart1():
+  """plot results from part1()"""
+  # see effect of different totalIter values when testing
+  net0 = DNetwork.Network([1,2,3], name="net0", backupDir=BACKUP_DIR)
+  net0.load("epoch0200.pkl")
+  stats = {
+    "iterations": [],
+    "net0": [],
+  }
+  for total in range(1, 15):
+    stats["iterations"].append(total)
+    stats["net0"].append(evaluateNet(net0, totalIter=total))
+
+  statsPath = os.path.join(BASE_DIR, "archive/experiment1/stats")
+
+  plotStats(stats, show=True, statsPath=statsPath + "_iterations", xkey="iterations", xlabel="total iterations (per input)", ylabel="% correct (test set)", title="experiment 1, net0 (epoch 200) performance over varying (total) iterations")
+  #import pdb; pdb.set_trace()
+  #return
+  stats = getStats(200)
+  plotStats(stats, show=True, statsPath=statsPath, xlabel="epochs", ylabel="% correct (test set)", title="experiment 1, deep net vs control")
+
+
+
 
 # TODO: extract this method into a common location for shared usage?
+#  (or at least make some helpers to return the available data for a given network's backup dir...)
 def getStats(totalEpochs):
   """load backups of networks, and return stats about their performance"""
 
@@ -86,13 +110,16 @@ def getStats(totalEpochs):
   return stats
 
 
-def evaluateNet(net, print=True):
+def evaluateNet(net, print=False, totalIter=None):
   training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
   #for (x,y) in training_data
 
   test_data = list(test_data)
 
-  correctCount = net.test(test_data)
+  if totalIter is None:
+    correctCount = net.test(test_data)
+  else:
+    correctCount = net.test(test_data, totalIter=totalIter)
 
   if print:
     print(f"net {net.name} :\t{correctCount}/{len(test_data)} = {(correctCount/len(test_data)):.3f} (test set performance)")

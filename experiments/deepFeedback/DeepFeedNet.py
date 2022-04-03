@@ -40,9 +40,9 @@ class Network(mynet.Network):
         # call parent constructor
         super().__init__(sizes, backupDir, name)
 
-    def test(self, test_data):
+    def test(self, test_data, totalIter=2):
         """exact copy of mynet's function"""
-        test_results = [(np.argmax(self.getOutput(x)), y)
+        test_results = [(np.argmax(self.getOutput(x, totalIter=totalIter)), y)
                         for (x, y) in test_data]
         # count the instances where the most activate output neuron matches the expected output index
         return sum(int(x == y) for (x, y) in test_results)
@@ -54,47 +54,16 @@ class Network(mynet.Network):
       # TODO: could we instead do something like:
       #   super().feedforward = self.feedforward()?
 
-    #def getOutput(self, x, iter=0, totalIter=2, prevFeedback=None):
-    def getOutput(self, x):
+    def getOutput(self, x, totalIter=2):
         """
         identical to mynet's version, but enssures self.feedforward is called instead of the parent one
         """
 
-        _, activations = self.feedforward(x)
+        _, activations = self.feedforward(x, totalIter=totalIter)
         return activations[-1]
 
         # TODO: if we need to implement an exact copy of any parent functions, can we just call super().getOutput(self.feedforward)
         #   i.e. make the parent take an optional param housing the function to call for a key operation...
-
-        """
-        #print(f"in DeepFeedNet.getOutput(), iter={iter+1}/{totalIter}")
-        rawInputDim = len(x) # e.g. 784
-        augX = copy.deepcopy(x)
-        #augX.resize((self.sizes[0], 1)) # inserts zeros as new entries at end
-        #np.testing.assert_array_equal(x, augX[:len(x)])
-
-        if prevFeedback is None:
-          prevFeedback = np.zeros((self.feedbackDim, 1))
-
-        # append prevFeedback to raw input x
-        augX = np.append(augX, prevFeedback, axis=0)
-        # fill end of augX with prevFeedback
-        #import pdb; pdb.set_trace()
-        #augX[rawInputDim: ] = prevFeedback
-        np.testing.assert_array_equal(augX[rawInputDim: ], prevFeedback)
-
-        _, activations = self.feedforward(augX)
-
-        # TODO: now recursively call self.getOutput as needed! :)
-        if iter+1 < totalIter:
-          # more iterations needed
-          return self.getOutput(x, iter+1, totalIter, prevFeedback=activations[self.feedbackLayer])
-
-
-        #import pdb; pdb.set
-
-        return activations[-1]
-        """
 
     def feedforward(self, rawA, iter=0, totalIter=2, prevFeedback=None):
         """
@@ -112,7 +81,7 @@ class Network(mynet.Network):
           activations of each layer of the network in the final iteration.
         """
 
-        #print(f"in DeepFeedNet.feedforward(), iter={iter+1}/{totalIter}")
+        print(f"in DeepFeedNet.feedforward(), iter={iter+1}/{totalIter}")
         rawInputDim = len(rawA) # e.g. 784
         if prevFeedback is None:
           prevFeedback = np.zeros((self.feedbackDim, 1))
@@ -130,5 +99,5 @@ class Network(mynet.Network):
 
         # recursively call self.feedforward as needed:
         if iter+1 < totalIter:
-          return self.feedforward(rawA, iter+1, totalIter, prevFeedback=activations[self.feedbackLayer])
+          return self.feedforward(rawA, iter+1, totalIter=totalIter, prevFeedback=activations[self.feedbackLayer])
         return zs, activations
