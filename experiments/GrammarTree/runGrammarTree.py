@@ -101,6 +101,7 @@ def part2():
   # [X] generalize code for training a pool of 3+ networks with a shared grammar layer...
   # [X] test having subnetworks generated from the pool and voting on the final outpout
 
+# TODO: move this to a top level helper file (outside of experiments)
 def joinNetworks(nets):
   """
   Combines a provided list of networks.
@@ -116,6 +117,7 @@ def joinNetworks(nets):
     final.biases += copy.deepcopy(n.biases)
   return final
 
+# TODO: move this to a top level helper file (outside of experiments)
 def splitNetwork(net, splitLayer, name=None):
   """
   return two networks, formed by splitting the provided network into two (at the given layer).
