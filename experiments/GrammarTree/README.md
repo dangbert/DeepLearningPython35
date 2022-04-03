@@ -69,6 +69,8 @@ These 4 networks were then evaluated on each item in the test dataset and allowe
 Note: the pool vote when averaging each networks output resulted specifically in a 97.03% performance, and 97.06% when taking the median of each networks output.
 
 ## Experiment2c
+[link to code at time of experiment](https://github.com/dangbert/DeepLearningPython35/tree/9d72dccecf636d4b04747f1e026044b4bc97b6fc)
+
 Interleaved 4 networks being trained from scratch.  Each trained to optimize its outputs across all 4 possible final segments to the network.
 
 ````python
