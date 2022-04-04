@@ -43,6 +43,8 @@ Performance of net0 (epoch200) with varying total iterations (during test stage)
 
 
 ## Experiment 1b:
+[link to code at time of experiment](https://github.com/dangbert/DeepLearningPython35/tree/2d6e407ce02b9d4721d69bdc531b9b56fd3bd164)
+
 Same as experiment 1a, except inject random gaussian noise as seed for first iteration of a given input:
 
 ````python
@@ -65,6 +67,7 @@ First 37 epochs:
 <img src="./archive/experiment1b/stats.png?raw=true" alt="main view" width="550">
 
 <img src="./archive/experiment1b/stats_iterations.png?raw=true" alt="main view" width="550">
+<img src="./archive/experiment1b/stats_50_iterations.png?raw=true" alt="main view" width="550">
 
 ---
 ## Further Experiments/ideas:

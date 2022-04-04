@@ -28,12 +28,24 @@ def main():
 
   # train networks
   #part1b(total_epochs=40)
-  part1b(total_epochs=1330, resumeFromEpoch=1327)
+  #part1b(total_epochs=1330, resumeFromEpoch=1327)
+
   # plot results (using backups from disk)
-  #plotPart1b()
+  stats, net0 = loadPrevRun(STATS_PATH, "epoch1327.pkl")
+  plotPart1b(stats, STATS_PATH, net0, totalIter=40)
 
 
+def loadPrevRun(statsPath, pklName, netName="net0"):
+  net = DNetwork.Network([1,2,3], name=netName, backupDir=BACKUP_DIR)
+  net.load(pklName)
 
+  stats = { "epochs": [], netName: [] }
+  if os.path.exists(STATS_PATH + '.pkl'):
+    with open(STATS_PATH + '.pkl', 'rb') as f:
+      stats = pickle.load(f)
+      print('loaded existing stats from file')
+  return stats, net
+  
 def part1b(total_epochs, resumeFromEpoch=None):
   """
   Same as part 1, except now seeding first iteration with gaussian noise, and using 4 iterations for training.
@@ -66,12 +78,8 @@ def part1b(total_epochs, resumeFromEpoch=None):
     curEpoch = resumeFromEpoch
     pklName = f"epoch{zeroPad(resumeFromEpoch, 4)}.pkl"
     print(f"resuming from: {pklName}")
-    net0.load(pklName)
 
-    if os.path.exists(STATS_PATH + '.pkl'):
-      with open(STATS_PATH + '.pkl', 'rb') as f:
-        stats = pickle.load(f)
-        print('loaded existing stats from file')
+    stats, net0 = loadPrevRun(STATS_PATH + '.pkl', pklName)
 
   evaluateNet(net0, verbose=True, totalIter=EVAL_ITERS)
 
@@ -91,14 +99,14 @@ def part1b(total_epochs, resumeFromEpoch=None):
 
   # plot/save stats
   #statsPath = os.path.join(BASE_DIR, "archive/experiment1b/stats")
-  pklName = f"epoch{zeroPad(e, 4)}.pkl"
-  plotPart1b(stats, STATS_PATH, pklName=pklName)
+  #pklName = f"epoch{zeroPad(e, 4)}.pkl"
+  plotPart1b(stats, STATS_PATH, net0)
 
   #plotStats(stats, show=True, statsPath=statsPath + "_iterations", xkey="iterations", xlabel="total iterations (per input)", ylabel="% correct (test set)", title="experiment 1, net0 (epoch 200) performance over varying (total) iterations")
 
 
 
-def plotPart1b(stats, statsPath, pklName=None):
+def plotPart1b(stats, statsPath, net=None, totalIter=15):
   """
   plot results from part1b()
   params:
@@ -109,24 +117,20 @@ def plotPart1b(stats, statsPath, pklName=None):
   # plot stats from training:
   plotStats(stats, show=False, statsPath=statsPath, xlabel="epochs", ylabel="% correct (test set)", title="experiment 1b, deep feedback net")
 
-  if pklName is None:
+  if net is None:
     return
 
   # see effect of different totalIter values when testing
-  net0 = DNetwork.Network([1,2,3], name="net0", backupDir=BACKUP_DIR)
-  #net0.load("epoch0200.pkl")
-  net0.load(pklName)
   stats = {
     "iterations": [],
-    "net0": [],
+    net.name: [],
   }
-  for total in range(1, 15):
+  for total in range(1, totalIter):
     stats["iterations"].append(total)
-    stats["net0"].append(evaluateNet(net0, totalIter=total))
+    stats[net.name].append(evaluateNet(net, totalIter=total))
+    plotStats(stats, show=False, statsPath=statsPath + "_iterations", xkey="iterations", xlabel="total iterations (per input)", ylabel="% correct (test set)", title=f"experiment 1b, {net.name} (epoch {net.epoch}) performance over varying iterations")
 
-
-  plotStats(stats, show=False, statsPath=statsPath + "_iterations", xkey="iterations", xlabel="total iterations (per input)", ylabel="% correct (test set)", title=f"experiment 1b, net0 ({pklName}) performance over varying iterations")
-  #import pdb; pdb.set_trace()
+  #plotStats(stats, show=False, statsPath=statsPath + "_iterations", xkey="iterations", xlabel="total iterations (per input)", ylabel="% correct (test set)", title=f"experiment 1b, {net.name} (epoch {net.epoch}) performance over varying iterations")
   #return
 
   # if we didn't save stats while training, we can recover some of them by reading/testing backup files:
