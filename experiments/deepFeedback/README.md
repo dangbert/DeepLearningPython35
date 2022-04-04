@@ -55,6 +55,13 @@ prevFeedback = np.random.normal(1, 0.5, (self.feedbackDim, 1))
 Additionally, the network was trained using the 4th iteration of each input, rather than iteration 2 (as experiment1a did).  (note: removed "control" network from this experiment).
 
 
+First 37 epochs:
+
+<img src="./archive/experiment1b/stats_epoch0037.png?raw=true" alt="main view" width="550">
+<img src="./archive/experiment1b/stats_iterations_epoch0037.png?raw=true" alt="main view" width="550">
+
+1330 epochs:
+
 <img src="./archive/experiment1b/stats.png?raw=true" alt="main view" width="550">
 
 <img src="./archive/experiment1b/stats_iterations.png?raw=true" alt="main view" width="550">

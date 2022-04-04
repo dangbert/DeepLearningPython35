@@ -27,13 +27,14 @@ STATS_PATH = os.path.join(BASE_DIR, "archive/experiment1b/stats")
 def main():
 
   # train networks
-  part1b(total_epochs=40)
+  #part1b(total_epochs=40)
+  part1b(total_epochs=1330, resumeFromEpoch=1327)
   # plot results (using backups from disk)
   #plotPart1b()
 
 
 
-def part1b(total_epochs):
+def part1b(total_epochs, resumeFromEpoch=None):
   """
   Same as part 1, except now seeding first iteration with gaussian noise, and using 4 iterations for training.
   Note: number of iterations to do when training is determined by the default value of totalIter in DeepFeedNet:feedforward()
@@ -54,12 +55,26 @@ def part1b(total_epochs):
   net0 = DNetwork.Network(sizes, name="net0", backupDir=BACKUP_DIR)
 
   #evaluateNet(netControl, print=True)
-  evaluateNet(net0, verbose=True, totalIter=EVAL_ITERS)
 
   # now train networks:
   stats = { "epochs": [], "net0": [] }
   rate, mini_batch_size = 3.0, 10
   curEpoch = 0
+
+  # load prev data from disk if applicable:
+  if resumeFromEpoch is not None:
+    curEpoch = resumeFromEpoch
+    pklName = f"epoch{zeroPad(resumeFromEpoch, 4)}.pkl"
+    print(f"resuming from: {pklName}")
+    net0.load(pklName)
+
+    if os.path.exists(STATS_PATH + '.pkl'):
+      with open(STATS_PATH + '.pkl', 'rb') as f:
+        stats = pickle.load(f)
+        print('loaded existing stats from file')
+
+  evaluateNet(net0, verbose=True, totalIter=EVAL_ITERS)
+
   for e in range(curEpoch+1, total_epochs+1, 4):
     net0.SGD(training_data, e, mini_batch_size, rate, test_data=test_data)
     #netControl.SGD(training_data, e, mini_batch_size, rate, test_data=test_data)
