@@ -65,7 +65,7 @@ class Network(mynet.Network):
         # TODO: if we need to implement an exact copy of any parent functions, can we just call super().getOutput(self.feedforward)
         #   i.e. make the parent take an optional param housing the function to call for a key operation...
 
-    def feedforward(self, rawA, iter=0, totalIter=2, prevFeedback=None):
+    def feedforward(self, rawA, iter=0, totalIter=4, prevFeedback=None):
         """
         returns list of z values and list of activations at each layer for a given input.
         (the first layer's "activations" will be identical to the inputs provided to this function).
@@ -81,10 +81,13 @@ class Network(mynet.Network):
           activations of each layer of the network in the final iteration.
         """
 
-        print(f"in DeepFeedNet.feedforward(), iter={iter+1}/{totalIter}")
+        #print(f"in DeepFeedNet.feedforward(), iter={iter+1}/{totalIter}")
         rawInputDim = len(rawA) # e.g. 784
         if prevFeedback is None:
-          prevFeedback = np.zeros((self.feedbackDim, 1))
+          # seed with all zeros:
+          #prevFeedback = np.zeros((self.feedbackDim, 1))
+          # seed with random gaussian noise:
+          prevFeedback = np.random.normal(1, 0.5, (self.feedbackDim, 1))
 
         # append prevFeedback to raw input a
         augA = copy.deepcopy(rawA)

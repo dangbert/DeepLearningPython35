@@ -18,53 +18,89 @@ import experiments.deepFeedback.DeepFeedNet as DNetwork
 from experiments.GrammarTree.runGrammarTree import plotStats
 
 
-BACKUP_DIR = "backups/deepFeedback"
-STATS_PATH = "{}/stats".format(BACKUP_DIR)
+#BACKUP_DIR = "backups/deepFeedback"
+BACKUP_DIR = "backups/deepFeedback_part1b"
+#STATS_PATH = "{}/stats".format(BACKUP_DIR)
+
+STATS_PATH = os.path.join(BASE_DIR, "archive/experiment1b/stats")
 
 def main():
 
   # train networks
-  #part1()
+  part1b(total_epochs=40)
   # plot results (using backups from disk)
+  #plotPart1b()
 
-  plotPart1()
 
 
-def part1():
+def part1b(total_epochs):
+  """
+  Same as part 1, except now seeding first iteration with gaussian noise, and using 4 iterations for training.
+  Note: number of iterations to do when training is determined by the default value of totalIter in DeepFeedNet:feedforward()
+  """
   training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
 
   # dimensions of feedback layer...
   FEEDBACK_DIM = 15
+  EVAL_ITERS = 4 # number of iterations to use at test/evaluation stage
 
   # "normal network" to compare experimental networks' performance to
   sizes = [784, 70, 40, FEEDBACK_DIM, 10]
-  netControl = network.Network(sizes, name="netControl", backupDir=BACKUP_DIR)
+  #netControl = network.Network(sizes, name="netControl", backupDir=BACKUP_DIR)
 
   # experimental network
   #sizes = netControl.sizes
   #sizes[0] != FEEDBACK_DIM
   net0 = DNetwork.Network(sizes, name="net0", backupDir=BACKUP_DIR)
 
-  evaluateNet(netControl, print=True)
-  evaluateNet(net0, print=True)
+  #evaluateNet(netControl, print=True)
+  evaluateNet(net0, verbose=True, totalIter=EVAL_ITERS)
 
-  # now train both networks:
-  # TODO: interleave training so it's more "parallel" (see runGramarTree.py)
-  total_epochs = 200
+  # now train networks:
+  stats = { "epochs": [], "net0": [] }
   rate, mini_batch_size = 3.0, 10
-  net0.SGD(training_data, total_epochs, mini_batch_size, rate, test_data=test_data)
-  netControl.SGD(training_data, total_epochs, mini_batch_size, rate, test_data=test_data)
+  curEpoch = 0
+  for e in range(curEpoch+1, total_epochs+1, 4):
+    net0.SGD(training_data, e, mini_batch_size, rate, test_data=test_data)
+    #netControl.SGD(training_data, e, mini_batch_size, rate, test_data=test_data)
+    stats["epochs"].append(e)
+    stats[net0.name].append(evaluateNet(net0, totalIter=EVAL_ITERS))
+
+    pklName = f"epoch{zeroPad(e, 4)}.pkl"
+    #plotPart1b(stats, STATS_PATH, pklName=pklName) # if we want to test over varying total iterations as well
+    plotPart1b(stats, STATS_PATH)
 
   print("\nDone training networks! evaluating...")
-  evaluateNet(netControl, print=True)
-  evaluateNet(net0, print=True)
+  #evaluateNet(netControl, verbose=True)
+  evaluateNet(net0, verbose=True, totalIter=EVAL_ITERS)
+
+  # plot/save stats
+  #statsPath = os.path.join(BASE_DIR, "archive/experiment1b/stats")
+  pklName = f"epoch{zeroPad(e, 4)}.pkl"
+  plotPart1b(stats, STATS_PATH, pklName=pklName)
+
+  #plotStats(stats, show=True, statsPath=statsPath + "_iterations", xkey="iterations", xlabel="total iterations (per input)", ylabel="% correct (test set)", title="experiment 1, net0 (epoch 200) performance over varying (total) iterations")
 
 
-def plotPart1():
-  """plot results from part1()"""
+
+def plotPart1b(stats, statsPath, pklName=None):
+  """
+  plot results from part1b()
+  params:
+    stats: stats from experiment
+    pklName: e.g. "epoch0200" (if not set, we won't test effects of varying total iterations during inference)
+  """
+
+  # plot stats from training:
+  plotStats(stats, show=False, statsPath=statsPath, xlabel="epochs", ylabel="% correct (test set)", title="experiment 1b, deep feedback net")
+
+  if pklName is None:
+    return
+
   # see effect of different totalIter values when testing
   net0 = DNetwork.Network([1,2,3], name="net0", backupDir=BACKUP_DIR)
-  net0.load("epoch0200.pkl")
+  #net0.load("epoch0200.pkl")
+  net0.load(pklName)
   stats = {
     "iterations": [],
     "net0": [],
@@ -73,21 +109,24 @@ def plotPart1():
     stats["iterations"].append(total)
     stats["net0"].append(evaluateNet(net0, totalIter=total))
 
-  statsPath = os.path.join(BASE_DIR, "archive/experiment1/stats")
 
-  plotStats(stats, show=True, statsPath=statsPath + "_iterations", xkey="iterations", xlabel="total iterations (per input)", ylabel="% correct (test set)", title="experiment 1, net0 (epoch 200) performance over varying (total) iterations")
+  plotStats(stats, show=False, statsPath=statsPath + "_iterations", xkey="iterations", xlabel="total iterations (per input)", ylabel="% correct (test set)", title=f"experiment 1b, net0 ({pklName}) performance over varying iterations")
   #import pdb; pdb.set_trace()
   #return
-  stats = getStats(200)
-  plotStats(stats, show=True, statsPath=statsPath, xlabel="epochs", ylabel="% correct (test set)", title="experiment 1, deep net vs control")
 
+  # if we didn't save stats while training, we can recover some of them by reading/testing backup files:
+  #stats = getStats(200)
+  #plotStats(stats, show=True, statsPath=statsPath, xlabel="epochs", ylabel="% correct (test set)", title="experiment 1, deep net vs control")
 
 
 
 # TODO: extract this method into a common location for shared usage?
 #  (or at least make some helpers to return the available data for a given network's backup dir...)
 def getStats(totalEpochs):
-  """load backups of networks, and return stats about their performance"""
+  """
+  load backups of networks, and return stats about their performance
+  (used if you didn't track/save stats while training the network).
+  """
 
   training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
   netControl = network.Network([1,2,3], name="netControl", backupDir=BACKUP_DIR)
@@ -95,7 +134,7 @@ def getStats(totalEpochs):
 
   stats = { "epochs": [], "net0": [], "netControl": [] }
   for e in range(0, totalEpochs+1, 25):
-    fname = "epoch{}.pkl".format(str(e).rjust(4, '0')) # 0 pad epoch
+    fname = "epoch{}.pkl".format(zeroPad(e, 4)) # 0 pad epoch
     if e == 0:
       fname = "initial.pkl"
     print(fname)
@@ -109,8 +148,16 @@ def getStats(totalEpochs):
     stats["netControl"].append(evaluateNet(netControl, print=False))
   return stats
 
+# TODO: move to general helper lib somewhere
+def zeroPad(num, width=4):
+  """
+  returns provided number (int) as a zero padded string of desired width
+  """
+  return str(num).rjust(width, '0')
 
-def evaluateNet(net, print=False, totalIter=None):
+
+
+def evaluateNet(net, verbose=False, totalIter=None):
   training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
   #for (x,y) in training_data
 
@@ -121,7 +168,7 @@ def evaluateNet(net, print=False, totalIter=None):
   else:
     correctCount = net.test(test_data, totalIter=totalIter)
 
-  if print:
+  if verbose:
     print(f"net {net.name} :\t{correctCount}/{len(test_data)} = {(correctCount/len(test_data)):.3f} (test set performance)")
   #import pdb; pdb.set_trace()
   return correctCount / len(test_data)

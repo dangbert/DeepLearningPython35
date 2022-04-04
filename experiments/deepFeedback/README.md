@@ -7,11 +7,11 @@ These experiments test the idea of a network that passes outputs from a deep lay
 
 So for a given "raw" input, the network can be ran for several iterations, and hopefully improve its performance over the iterations.
 
-On the first iteration, we inject all zeros (in future consider using random noise) as a placeholder for the initial deep feedback.
+On the first iteration, we inject all zeros or random gaussian noise as a placeholder for the initial deep feedback.
     
 Note to self: see my email [here](https://mail.google.com/mail/u/0/#inbox/KtbxLwgxChPRnrCsrZxDLJPCzHLxxlJgJq) with full initial thoughts on this idea.  This idea itself is inspired by how deep feedback in the brain's visual system feeds back to the earlier levels of the visual cortex.  "What we think we're seeing influences what we actually see."  [more info here](https://medicalxpress.com/news/2021-06-feedback-visual-cortex-perception.html).
 
-## Experiment 1:
+## Experiment 1 (a):
 [link to code at time of experiment](https://github.com/dangbert/DeepLearningPython35/tree/e304ac447f76ec9875a090e50a9d0f24016ee82c)
 
 
@@ -29,7 +29,7 @@ Both networks were then trained for 200 epochs on the mnist dataset.  net0 was t
 
 ### Results:
 
-No notable improvment at this time.
+No notable improvement at this time.
 
 #### Data:
 See `stats.pkl` in the `archive/experiment1` folder.  The stats/plot below capture the performance of both networks, sampled every 25 epochs (up to epoch 200).
@@ -42,8 +42,27 @@ Performance of net0 (epoch200) with varying total iterations (during test stage)
 (remember the network was trained to optimize its performance on iteration 2).
 
 
-#### Further Experiments/ideas:
-* Try doing a higher number of iterations (only 2 were used for this experiment)!!
-* Experiment with passing noise to augment the raw input on the first iteration.
+## Experiment 1b:
+Same as experiment 1a, except inject random gaussian noise as seed for first iteration of a given input:
+
+````python
+# seed with all zeros:
+#prevFeedback = np.zeros((self.feedbackDim, 1))
+# seed with random gaussian noise:
+prevFeedback = np.random.normal(1, 0.5, (self.feedbackDim, 1))
+````
+
+Additionally, the network was trained using the 4th iteration of each input, rather than iteration 2 (as experiment1a did).  (note: removed "control" network from this experiment).
+
+
+<img src="./archive/experiment1b/stats.png?raw=true" alt="main view" width="550">
+
+<img src="./archive/experiment1b/stats_iterations.png?raw=true" alt="main view" width="550">
+
+---
+## Further Experiments/ideas:
+* ~~Try doing a higher number of iterations (only 2 were used for this experiment)!!~~
+* ~~Experiment with passing noise to augment the raw input on the first iteration.~~
 * Experiment with combining this with the grammar tree experiment (i.e. passing feedback from pooled grammar tree layer(s) back to earlier layers in the networks)...
 * Try passing feedback not to layer 0, but to a later layer (like layer 1).
+* Consider if we could/should do some form of training on every pass, rather than just the final pass.
