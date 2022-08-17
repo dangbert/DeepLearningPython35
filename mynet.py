@@ -247,7 +247,7 @@ class Network(object):
     def backprop(self, x, y):
         """
         does backpropagation and returns returns nabla_b, nabla_w, nabla_a0
-        (partial dertivatives of biases and weights wrt. cost function, 
+        (partial derivatives of biases and weights wrt. cost function, 
         nabla_a0 is dC/da for the activations ("inputs") of the input layer).
         """
         zs, activations = self.feedforward(x)
