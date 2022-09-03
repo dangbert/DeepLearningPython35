@@ -31,13 +31,17 @@ def main():
     # load/train classifier network
     net0 = network.Network([784, 70, 40, 15, 10], name="classifer", backupDir=BACKUP_DIR)
     if args.start_epoch != -1:
-        net0.load(f"epoch{args.start_epoch}.pkl")
+        net0.load(f"epoch{zeroPad(args.start_epoch)}.pkl")
     if net0.epoch < args.end_epoch:
       net0.SGD(training_data, args.end_epoch, mini_batch_size, rate, test_data=test_data)
 
     print(f"classifer ready (at epoch {net0.epoch})")
 
-    input = generateData(net0, np.array([0, 1, 0, 0, 0, 0, 0, 0, 0, 0]))
+    #target = np.array([0, 0, 2, 0, 0, 0, 0, 0, 0, 0])
+    target = np.zeros((10, 1))
+    target[2] = 1
+
+    input = generateData(net0, target)
     mnist_loader.vectorToImage(input).save("out.png")
     print("done! wrote out.png")
 
@@ -62,7 +66,7 @@ def generateData(net: network.Network, desiredOutput: np.ndarray):
             break
 
         (_, _, nabla_a0) = net.backprop(input, desiredOutput)
-        error = net.testQuadraticCost((input, desiredOutput))
+        error = net.testQuadraticCost([(input, desiredOutput)])
         errors.append(error)
 
         # update input using backprop
@@ -70,6 +74,8 @@ def generateData(net: network.Network, desiredOutput: np.ndarray):
         iter += 1
     return input
 
+def zeroPad(num, digits=4):
+    return str(num).rjust(digits, '0') # 0 pad number
 
 if __name__ == "__main__":
     main()
