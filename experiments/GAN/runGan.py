@@ -43,6 +43,7 @@ def main():
 
     input = generateData(net0, target)
     mnist_loader.vectorToImage(input).save("out.png")
+    # TODO: report confidence of network on image's classification...
     print("done! wrote out.png")
 
 
