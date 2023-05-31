@@ -101,6 +101,7 @@ def part2():
   # [X] generalize code for training a pool of 3+ networks with a shared grammar layer...
   # [X] test having subnetworks generated from the pool and voting on the final outpout
 
+# TODO: move this to a top level helper file (outside of experiments)
 def joinNetworks(nets):
   """
   Combines a provided list of networks.
@@ -116,6 +117,7 @@ def joinNetworks(nets):
     final.biases += copy.deepcopy(n.biases)
   return final
 
+# TODO: move this to a top level helper file (outside of experiments)
 def splitNetwork(net, splitLayer, name=None):
   """
   return two networks, formed by splitting the provided network into two (at the given layer).
@@ -199,7 +201,8 @@ def evaluate(n0, tmp, test_data, gl):
   print('correct = {} / {} = {:.2f}%\n'.format(correct, len(data), 100 * correct / len(data)))
   return 100 * correct / len(data)
 
-def plotStats(stats, show=False, statsPath=STATS_PATH, xlabel="", ylabel="", title=""):
+# TODO: move this to a common lib location
+def plotStats(stats, xkey="epochs", show=False, statsPath=STATS_PATH, xlabel="", ylabel="", title="", plotLines=True):
   """
   plot stats of the format:
     { 'epochs': [], 'net0': [], 'tmp1': [], 'tmp0': [] }
@@ -208,9 +211,10 @@ def plotStats(stats, show=False, statsPath=STATS_PATH, xlabel="", ylabel="", tit
   """
   plt.clf()
   for key in stats.keys():
-    if key == 'epochs':
+    if key == xkey:
       continue
-    plt.plot(stats['epochs'], stats[key], label=key)
+    plt.plot(stats[xkey], stats[key], label=key)
+    #plt.plot(stats['epochs'], stats[key], label=key, linestyle=None)
 
   plt.legend()
   plt.xlabel(xlabel)

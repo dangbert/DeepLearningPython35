@@ -150,7 +150,7 @@ class Network(object):
     #   (takes advantage of parallelization in CPU and GPU's)
     #   try to work this out myself but if needed reference:
     #   https://medium.com/@hindsellouk13/matrix-based-back-propagation-fe143ce2b2df
-    def updateMiniBatch(self, miniBatch, rate):
+    def updateMiniBatch(self, miniBatch, rate, feedforward=None):
         """
         Perform gradient descent using backpropogation on a single miniBatch
         and update the network's weights and biases.
@@ -168,7 +168,7 @@ class Network(object):
         # average the delta_b, delta_w calculated for each training sample
         # and adjust the weights, biases using the learning rate
         for x, y in miniBatch:
-            delta_b, delta_w, _ = self.backprop(x, y)
+            delta_b, delta_w, _ = self.backprop(x, y, feedforward=feedforward)
             nabla_b = [nb+db for nb, db in zip(nabla_b, delta_b)]
             nabla_w = [nw+dw for nw, dw in zip(nabla_w, delta_w)]
         self.biases = [b-(rate/len(miniBatch))*nb
@@ -178,7 +178,7 @@ class Network(object):
 
 
     def SGD(self, training_data, epochs, mini_batch_size, rate,
-            test_data=None):
+            test_data=None, feedforward=None):
         """Train the neural network using mini-batch stochastic
         gradient descent.  The ``training_data`` is a list of tuples
         ``(x, y)`` representing the training inputs (a vector) and the desired
@@ -226,7 +226,7 @@ class Network(object):
             batchNum = 0
             for mini_batch in mini_batches:
                 #print("at mini batch {} of {}".format(batchNum+1, len(mini_batches)))
-                self.updateMiniBatch(mini_batch, rate)
+                self.updateMiniBatch(mini_batch, rate, feedforward=feedforward)
                 batchNum += 1
 
             if test_data:
@@ -244,13 +244,17 @@ class Network(object):
         self.save("latest.pkl")
         print("\ntraining complete (reached epoch {})".format(epochs))
 
-    def backprop(self, x, y):
+    def backprop(self, x, y, feedforward=None):
         """
         does backpropagation and returns returns nabla_b, nabla_w, nabla_a0
         (partial derivatives of biases and weights wrt. cost function, 
         nabla_a0 is dC/da for the activations ("inputs") of the input layer).
         """
-        zs, activations = self.feedforward(x)
+
+        if feedforward is None:
+          feedforward = self.feedforward
+
+        zs, activations = feedforward(x)
         # note: nabla_b is the same as the "error" calculated at each node
         nabla_b = [np.zeros(b.shape, dtype=float) for b in self.biases]
         nabla_w = [np.zeros(w.shape, dtype=float) for w in self.weights]
